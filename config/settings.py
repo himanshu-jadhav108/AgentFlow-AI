@@ -1,0 +1,59 @@
+"""Configuration management for AgentFlow AI using Pydantic Settings.
+
+Provides loaded, validated environment variables with type safety.
+"""
+
+from typing import Literal
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """Application settings, loaded from environment variables and .env file."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    # General Settings
+    APP_NAME: str = Field(default="AgentFlow AI Support Agent", description="The name of the application.")
+    APP_ENV: str = Field(default="development", description="The run environment (e.g., development, production).")
+    HOST: str = Field(default="0.0.0.0", description="IP address to bind the API server to.")
+    PORT: int = Field(default=8000, description="Port to bind the API server to.")
+    LOG_LEVEL: str = Field(default="INFO", description="Log level for application logging.")
+
+    # Model Settings
+    LLM_PROVIDER: Literal["ollama", "huggingface", "llama-cpp"] = Field(
+        default="ollama",
+        description="The local LLM provider to use.",
+    )
+    LLM_MODEL_NAME: str = Field(
+        default="phi3",
+        description="Model identifier/name to use with the selected provider.",
+    )
+    LLM_API_URL: str = Field(
+        default="http://localhost:11434",
+        description="URL for API-based local LLM providers (like Ollama).",
+    )
+
+    # Embedding Settings
+    EMBEDDING_MODEL_NAME: str = Field(
+        default="sentence-transformers/all-MiniLM-L6-v2",
+        description="Name of the sentence-transformers model to download and run locally.",
+    )
+
+    # Storage Paths
+    VECTOR_DB_PATH: str = Field(
+        default="data/vectorstore",
+        description="Path to save/load FAISS vector indexes.",
+    )
+    DOCUMENTS_DIR: str = Field(
+        default="data/documents",
+        description="Directory containing source text documents to index.",
+    )
+
+
+# Instantiate settings for global project import
+settings = Settings()
