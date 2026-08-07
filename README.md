@@ -2,31 +2,87 @@
 
 ### Retrieve. Verify. Explain.
 
-> A local-first AI customer support agent that retrieves trusted knowledge, generates grounded responses, verifies them, and exposes transparent execution diagnostics — without requiring cloud LLM APIs.
+> A local-first AI customer support agent built to answer from trusted knowledge — then verify its own response before returning it.
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│   User Question                                         │
+│        ↓                                                │
+│   Retrieve Knowledge (FAISS Dense Vector Store)          │
+│        ↓                                                │
+│   Generate Answer (Local HuggingFace LLM)                │
+│        ↓                                                │
+│   Verify Grounding (Rule-Based + Semantic Check)        │
+│        ↓                                                │
+│   Explain & Trace (Execution Path & Latencies)          │
+│        ↓                                                │
+│   Verified Response                                     │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
 
 [![Python Version](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-v0.110.0-green.svg)](https://fastapi.tiangolo.com/)
-[![LangGraph](https://img.shields.io/badge/LangGraph-v0.1%2B-orange.svg)](https://github.com/langchain-ai/langgraph)
-[![PyTorch](https://img.shields.io/badge/PyTorch-v2.0%2B-red.svg)](https://pytorch.org/)
-[![FAISS](https://img.shields.io/badge/FAISS-Local_Index-blueviolet.svg)](https://github.com/facebookresearch/faiss)
+[![LangGraph](https://img.shields.io/badge/LangGraph-State_Machine-orange.svg)](https://github.com/langchain-ai/langgraph)
+[![PyTorch](https://img.shields.io/badge/PyTorch-Local_Execution-red.svg)](https://pytorch.org/)
+[![FAISS](https://img.shields.io/badge/FAISS-Vector_Store-blueviolet.svg)](https://github.com/facebookresearch/faiss)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
----
-
-## Navigation
-[API Reference](#13-api-reference) • [Quick Start](#11-installation) • [System Architecture](#4-system-architecture)
+[Quick Start](#quick-start) • [Architecture](#architecture--how-it-works) • [Engineering Highlights](#engineering-highlights) • [API Reference](#api-reference)
 
 ---
 
-## 2. Why AgentFlow AI?
+## See AgentFlow AI in Action
 
-Standard AI chatbots built on top of LLMs suffer from severe limitations:
-* **Hallucinations**: Models generate plausible-sounding but completely incorrect instructions.
-* **No Grounding**: Chatbots answer from internal weights without verifying external documents.
-* **Lack of Verification**: Output is returned directly to the user without compliance or factual audits.
-* **Zero Execution Visibility**: The system acts as a black box, making debugging difficult.
+### Question
+> *"Can a read-only user create API keys?"*
 
-AgentFlow AI implements an opinionated engineering philosophy:
+```text
+        ↓  RETRIEVE (4 documentation chunks matched via FAISS)
+        ↓  GENERATE (Local Qwen model synthesizes grounded answer)
+        ↓  VERIFY   (Hybrid verification checks JSON format & factual alignment)
+```
+
+### Verified Compact Response
+```json
+{
+  "classification": "answerable",
+  "answer": "No. Read-only users possess view-only permissions and cannot create or revoke API keys.",
+  "confidence": 0.94,
+  "sources": ["faq.md"],
+  "requires_human": false,
+  "reason": "Answer verified successfully. Factual grounding check passed."
+}
+```
+
+### What Makes This Different?
+Instead of blindly returning generated text, AgentFlow AI calculates an **application-level confidence score** derived from multiple pipeline signals:
+
+```text
+             Retrieval Quality (Cosine Similarity)
+                            +
+             Source Coverage (Citations vs Context)
+                            +
+             Verification Result (Rule + Semantic Check)
+                            +
+             Output Consistency
+                            │
+                            ▼
+                  Application Confidence
+```
+
+---
+
+## Why AgentFlow AI?
+
+Standard AI chatbots built directly on top of cloud LLMs present severe enterprise risks:
+* ⚠️ **Hallucinations**: Models fabricate plausible-sounding but incorrect credentials or instructions.
+* ⚠️ **Zero Grounding**: LLMs answer from internal pre-training weights without checking actual company documents.
+* ⚠️ **Black-Box Execution**: Developers have zero visibility into why a specific decision was made.
+* ⚠️ **Data Privacy & Token Costs**: Sending private queries to public APIs incurs recurring token fees and risks data leakage.
+
+### Philosophy: RETRIEVE → VERIFY → EXPLAIN
 
 ```mermaid
 graph TD;
@@ -34,28 +90,25 @@ graph TD;
     classDef styleProcess fill:#40A02B,stroke:#A6E3A1,stroke-width:2px,color:#FFFFFF;
     classDef styleEnd fill:#8839EF,stroke:#CBA6F7,stroke-width:2px,color:#FFFFFF;
 
-    Q[User Question]:::styleStart --> R[Retrieve Documents]:::styleProcess;
-    R --> G[Generate Response]:::styleProcess;
+    Q[User Question]:::styleStart --> R[Retrieve Knowledge]:::styleProcess;
+    R --> G[Generate Answer]:::styleProcess;
     G --> V[Verify Grounding]:::styleProcess;
-    V --> E[Expose Explanation]:::styleProcess;
-    E --> Ans[Final Response]:::styleEnd;
+    V --> E[Expose Diagnostics]:::styleProcess;
+    E --> Ans[Verified Response]:::styleEnd;
 ```
 
----
-
-## 3. Key Features
-
-| Feature | What it does | Why it matters |
-| :--- | :--- | :--- |
-| **Local LLM Execution** | Runs causal language models entirely on host RAM/VRAM. | Guarantees complete data privacy and zero API token costs. |
-| **Workflow State Machine** | Orchestrates tasks using a cyclic LangGraph state dictionary. | Supports retry loops and conditional branching. |
-| **Hybrid Verification** | Performs rule-based formatting checks followed by semantic verifications. | Rejects hallucinations early, saving compute. |
-| **Explainability Engine** | Builds execution timelines and confidence factors. | Provides execution transparency without exposing raw chain-of-thought. |
-| **Debug Session Store** | Saves request metadata in a thread-safe sliding in-memory store. | Simplifies local pipeline monitoring and latency tracing. |
+### Built For
+AgentFlow AI is designed for support environments where answers **must** be grounded in official documentation:
+- Product documentation & API assistants
+- Internal team knowledge bases & policy FAQs
+- Developer support portals
+- Privacy-sensitive / local execution environments
 
 ---
 
-## 4. System Architecture
+## Architecture & How It Works
+
+### High-Level Architecture
 
 ```mermaid
 graph TB;
@@ -66,13 +119,13 @@ graph TB;
     classDef styleRegistry fill:#8839EF,stroke:#CBA6F7,stroke-width:2px,color:#FFFFFF;
 
     subgraph Client Layer
-        U[Client Browser]:::styleClient;
+        U[Client Request]:::styleClient;
     end
 
     subgraph FastAPI Web Service
         API[FastAPI Router]:::styleApp;
-        Middle[Middlewares / Rate Limits]:::styleApp;
-        Cache[Cache Manager]:::styleApp;
+        Middle[Rate Limiter & Validation]:::styleApp;
+        Cache[Memory Cache]:::styleApp;
     end
 
     subgraph LangGraph State Machine
@@ -80,11 +133,10 @@ graph TB;
         Triage -->|Answerable| Retrieve:::styleGraph;
         Retrieve --> Generate:::styleGraph;
         Generate --> VerifyNode:::styleGraph;
-        VerifyNode -->|Fail & Retries < 3| Generate;
         VerifyNode -->|Pass / Fail-Safe| END:::styleGraph;
     end
 
-    subgraph Local Context & DI Registry
+    subgraph Local Execution & Component Registry
         Registry[ComponentRegistry]:::styleRegistry --> FAISS[FAISS Vector Store]:::styleRegistry;
         Registry --> LLM[Local Qwen LLM]:::styleRegistry;
         Registry --> Verifier[Hybrid Verifier]:::styleVerify;
@@ -99,147 +151,11 @@ graph TB;
     VerifyNode --> Verifier;
 ```
 
-* **Client Layer**: Routes user queries to endpoints.
-* **FastAPI Web Service**: Handles rate limiting, payload validations, cache lookups, and timing log files.
-* **LangGraph State Machine**: Orchestrates state transitions, executing verifications and retrying if necessary.
-* **Local Context & DI Registry**: Manages component lifespans, resolving concrete database indexers, local embeddings, and model weights.
-
 ---
 
-## 5. How a Request Flows Through AgentFlow AI
+## What Happens When the Model Is Wrong?
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Client
-    participant API as FastAPI Router
-    participant Graph as LangGraph Engine
-    participant DB as FAISS Database
-    participant LLM as Local Qwen LLM
-    participant Verify as Hybrid Verifier
-
-    Client->>API: POST /ask (Question)
-    API->>API: Rate Limiting & Cache Lookup
-    API->>Graph: Invoke State Workflow
-    Graph->>DB: Query Dense Vector Embeddings
-    DB-->>Graph: Return Scored context chunks
-    Graph->>LLM: Generate Answer JSON (Grounded Prompt)
-    LLM-->>Graph: Return Response JSON
-    Graph->>Verify: Verify Factual Grounding
-    alt Factual Grounding Fails
-        Graph->>LLM: Regenerate Answer with Revision Feedback
-    else Factual Grounding Passes
-        Graph->>API: Return Final AgentState
-    end
-    API-->>Client: JSON Response (Answer, Sources, Trace)
-```
-
-1. **Request Sanitization**: The input query string is cleaned and validated.
-2. **State Initialization**: The graph state is initialized, creating a unique query UUID.
-3. **Triage Classification**: The query is categorized. If valid and on-topic, it is routed to Retrieval.
-4. **Vector Retrieval**: FAISS searches the local database and returns relevant chunks.
-5. **Context Prompting**: Prompt templates combine the retrieved chunks, history, and system instructions.
-6. **Inference Execution**: The local Qwen model generates a response.
-7. **Hybrid Verification**: The verifier runs rule-based and semantic factual grounding checks.
-8. **Loop Retry / Self-Correction**: If the verifier detects a hallucination, it increments the retry counter and loops back to generation with feedback.
-9. **Diagnostics compilation**: Timing and timeline logs are compiled.
-10. **Client Delivery**: The response is returned to the user.
-
----
-
-## 6. Live Example
-
-### POST `/ask` Request
-```json
-{
-  "question": "How do I reset my password?"
-}
-```
-
-### Response Payload
-```json
-{
-  "classification": "answerable",
-  "answer": "To reset your password, navigate to the settings page and click 'Reset'.",
-  "confidence": 0.94,
-  "sources": [
-    "faq.md"
-  ],
-  "requires_human": false,
-  "reason": "Answer verified successfully. Reason: Factual grounding check passed.",
-  "metadata": {
-    "generation_latency_ms": 110.45,
-    "verification_latency_ms": 12.3
-  },
-  "explainability": {
-    "request_id": "req-171828",
-    "question": "How do I reset my password?",
-    "classification": "answerable",
-    "retrieval_summary": "Retrieved 4 relevant document chunks from 1 unique source files.",
-    "source_summary": "Citations: ['faq.md']. Coverage: 1.00",
-    "verification_summary": "Factual Grounding Check: PASS.\nVerification Status: 'verified'.\nSelf-Correction Retry Count: 0 iterations.",
-    "confidence_breakdown": {
-      "retrieval_similarity_contribution": 0.376,
-      "source_coverage_contribution": 0.25,
-      "verification_contribution": 0.25,
-      "consistency_contribution": 0.09,
-      "total_confidence": 0.966
-    },
-    "execution_summary": "Query was triaged as 'answerable' and processed through nodes: start -> triage -> retrieve -> generate -> verify -> end in 142.15ms.",
-    "graph_path": [
-      "start",
-      "triage",
-      "retrieve",
-      "generate",
-      "verify",
-      "end"
-    ],
-    "timeline": [
-      {
-        "event": "Request Received",
-        "timestamp": "2026-08-07 17:30:00",
-        "duration_ms": 1.1,
-        "summary": "Initialized state trace."
-      }
-    ],
-    "warnings": []
-  },
-  "execution_trace": {
-    "request_id": "req-171828",
-    "question": "How do I reset my password?",
-    "graph_path": [
-      "start",
-      "triage",
-      "retrieve",
-      "generate",
-      "verify",
-      "end"
-    ],
-    "visited_nodes": [
-      "start",
-      "triage",
-      "retrieve",
-      "generate",
-      "verify",
-      "end"
-    ],
-    "retriever_time_ms": 110.45,
-    "generation_time_ms": 12.3,
-    "verification_time_ms": 19.4,
-    "retry_count": 0,
-    "confidence": 0.94,
-    "final_decision": "answerable",
-    "total_execution_time_ms": 142.15,
-    "nodes": []
-  }
-}
-```
-
----
-
-## 7. Hybrid Verification
-
-Retrieval-Augmented Generation alone does not guarantee accuracy, as LLMs can still hallucinate details that contradict the retrieved context.
+AgentFlow AI does **not** treat generation as the final step. If the verifier detects that an answer contains invalid formatting or facts not supported by the retrieved context, it triggers an automatic **self-correction loop**:
 
 ```mermaid
 graph TD;
@@ -248,202 +164,209 @@ graph TD;
     classDef stylePass fill:#40A02B,stroke:#A6E3A1,stroke-width:2px,color:#FFFFFF;
     classDef styleFail fill:#D20F39,stroke:#F38BA8,stroke-width:2px,color:#FFFFFF;
 
-    Gen[Generated Response]:::styleGen --> Rule[Rule-Based Validation]:::styleRule;
-    Rule -->|Fail| Retry[Loop Retry / Self-Correction]:::styleFail;
+    Gen[Generated Answer]:::styleGen --> Rule[Rule-Based Validation]:::styleRule;
+    Rule -->|Fail| Feedback[Inject System Revision Feedback]:::styleFail;
+    Feedback --> Retry[Regenerate with LLM]:::styleGen;
+    Retry --> Rule;
     Rule -->|Pass| Sem[Semantic Verification]:::styleRule;
     Sem -->|Pass| Pass[Return Response]:::stylePass;
-    Sem -->|Fail| Retry;
+    Sem -->|Fail| Feedback;
 ```
 
-* **Rule-Based Validation**: Deterministic checks ensure the response parses as valid JSON, is non-empty, and contains citations.
-* **Semantic Verification**: Compares generated assertions directly to the retrieved context to ensure there are no contradictions.
+1. **Rule-Based Validation**: Performs deterministic, lightning-fast checks (e.g. verifying JSON syntax, non-empty text, and presence of cited sources).
+2. **Semantic Verification**: Verifies that generated assertions do not contradict retrieved document chunks.
+3. **Loop Bounding**: Enforces a strict `max_retries = 3` limit. If the threshold is reached, execution terminates safely with a refusal message rather than looping endlessly.
 
 ---
 
-## 8. Explainability Without Chain-of-Thought
+## Engineering Highlights
 
-AgentFlow AI does **not** expose the model's internal reasoning steps (Chain-of-Thought), as these can be non-deterministic, leak prompts, and increase latency.
-
-Instead, we provide **deterministic pipeline diagnostics**:
-- **Retrieved Sources**: Exact document names and similarity scores.
-- **Verification Status**: Specific checks that passed or failed.
-- **Confidence Breakdown**: Contribution weights for retrieval, coverage, and verification.
-- **Execution Timeline**: Timing data for each step in the workflow.
-
----
-
-## 9. Developer Observability
-
-The developer dashboard manages logs and histories in memory:
-- **In-Memory Storage**: Stores session histories in a thread-safe `OrderedDict` with a limit of 100 entries.
-- **Diagnostics API**: Query `/debug/history` and `/debug/session/{request_id}` to retrieve Mermaid diagrams and ASCII charts.
-- **Safety**: Debug endpoints are disabled in production (`DEBUG_MODE=False`).
+| Problem | AgentFlow AI's Approach | Engineering Benefit |
+| :--- | :--- | :--- |
+| **LLM Hallucinations** | Retrieval + Hybrid Verification | Prevents false information from reaching the client. |
+| **Verification Failure** | LangGraph Cyclic State Loop | Self-corrects responses automatically before returning. |
+| **Tight Architecture Coupling** | Interface-Based Design (`BaseRetriever`, `BaseLLM`) | Allows swapping underlying AI libraries without modifying graph nodes. |
+| **Component Testing** | Central `ComponentRegistry` & Dependency Injection | Enables instant mock substitution during automated testing. |
+| **Black-Box Execution** | Execution Trace & Diagnostic Timelines | Exposes per-node latencies and path history for easy debugging. |
+| **Cloud API Dependencies** | Local Inference (HuggingFace + FAISS) | Guarantees complete data privacy and zero token costs. |
 
 ---
 
-## 10. Technology Stack
+## Why LangGraph?
+
+A standard linear RAG pipeline is unidirectional:
+
+```text
+Retrieve  ──►  Generate  ──►  Return Output
+```
+
+Linear chains **cannot handle real-world failures**. If the generator output is malformed or unsupported, a linear chain has no mechanism to recover.
+
+AgentFlow AI uses **LangGraph** because it natively supports cyclic state machines:
+
+```text
+                  ┌────────────────────────┐
+                  ▼                        │ (Verification Failed)
+Retrieve ──► Generate ──► Verify ──► (Passed?) ──► Return Output
+```
+
+LangGraph gives us:
+- **Thread-safe state propagation** via `AgentState`.
+- **Conditional Edge Routing** (e.g. routing short inputs to Clarification, sensitive queries to Escalation, and hallucinations to Retry).
+- **Inspectable visited paths** for observability.
+
+---
+
+## Technology Stack
 
 | Layer | Technology | Purpose |
 | :--- | :--- | :--- |
-| **Backend** | FastAPI | REST API endpoints |
-| **Orchestration** | LangGraph | Workflow state machine |
-| **Retrieval** | FAISS | Vector database similarity search |
-| **Embeddings** | SentenceTransformers | Text embeddings calculations |
-| **LLM** | Transformers | Local text generation |
-| **Configuration** | Pydantic Settings | Environment configuration |
-| **Testing** | Pytest | Automated tests |
-| **Containerization** | Docker | Reproducible local execution |
+| **Backend Framework** | FastAPI | Async ASGI web server & route handling |
+| **Orchestration Engine** | LangGraph | Cyclic state machine & routing logic |
+| **Vector Search** | FAISS | In-memory dense vector similarity index |
+| **Local Embeddings** | SentenceTransformers (`all-MiniLM-L6-v2`) | Query & chunk vectorization |
+| **Local LLM** | Hugging Face Transformers (`Qwen2.5-0.5B-Instruct`) | Local grounded text generation |
+| **Configuration** | Pydantic Settings | Environment-driven settings & profile management |
+| **Test Automation** | Pytest | Unit, integration, and performance test suites |
+| **Containerization** | Docker Compose | Reproducible, zero-config local deployment |
 
 ---
 
-## 11. Installation
+## Quick Start
 
 ### Prerequisites
 - **Python**: 3.11+
-- **RAM**: 8GB+ (16GB recommended for local model execution)
-- **Disk Space**: 5GB free space (for caching model weights)
+- **RAM**: 8GB+ (16GB recommended for local model inference)
+- **Disk Space**: 5GB free space (for local HuggingFace weights)
 - **Docker**: Docker Compose installed
 
-### Local Python Setup
+### Option 1: Automated Setup Script (Local Python)
 ```bash
-# 1. Create a virtual environment inheriting system packages (recommended for pre-compiled PyTorch/FAISS)
+# 1. Create a virtual environment inheriting system packages
 python -m venv --system-site-packages .venv
 .venv\Scripts\activate
 
-# 2. Run the automated setup script
+# 2. Run the automated environment setup utility
 python scripts/setup.py
+
+# 3. Start the FastAPI development server
+uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-### Docker Setup
+### Option 2: Docker Compose (Zero-Config)
 ```bash
 docker compose up --build
 ```
+> **Note**: Docker Compose automatically creates host-mounted volume paths (`huggingface_cache` and `vector_data`) to ensure model weights and FAISS vector indices persist across container rebuilds.
+
+### Verify Installation
+Open your browser and navigate to:
+👉 **`http://127.0.0.1:8000/docs`** (Interactive Swagger UI API Console)
 
 ---
 
-## 12. Configuration
-
-Configurations are loaded from the environment or `.env` files:
-
-| Variable | Type | Default | Required? | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `APP_ENV` | `str` | `"development"` | No | Target environment profile (`development`, `production`, `testing`). |
-| `LLM_MODEL_NAME` | `str` | `"Qwen/Qwen2.5-0.5B-Instruct"` | No | Path to model weights on Hugging Face hub. |
-| `EMBEDDING_MODEL_NAME` | `str` | `"sentence-transformers/all-MiniLM-L6-v2"` | No | Model used for embeddings. |
-| `DEBUG_MODE` | `bool` | `True` | No | Exposes debug diagnostics and execution traces. |
-
----
-
-## 13. API Reference
+## API Reference
 
 ### Core Endpoints
-- `POST /ask`: Queries the support pipeline.
-- `POST /explain`: Returns the answer alongside the explainability report.
 
-### System Endpoints
-- `GET /health`: Returns basic health status.
-- `GET /system/status`: Returns system hardware metrics and vector database metadata.
+#### `POST /ask`
+Executes the full support pipeline (Triage $\rightarrow$ Retrieve $\rightarrow$ Generate $\rightarrow$ Verify $\rightarrow$ Respond).
 
-### Developer Endpoints (Disabled in Production)
-- `GET /debug/history`: Lists summaries of recent requests.
-- `GET /debug/session/{request_id}`: Returns the execution timeline and graph path.
-- `GET /debug/metrics`: Shows aggregated latency statistics.
-- `DELETE /debug/history`: Clears session history.
-
----
-
-## 14. Project Structure
-
-```
-app/
-├── api/             # REST endpoints and middlewares
-├── core/            # Interfaces, DI registries, and trace tools
-├── dashboard/       # Debug session store history and renderers
-├── embeddings/      # Local embeddings managers
-├── explainability/  # Explainability report builders
-├── graph/           # LangGraph compiler
-├── llm/             # Local LLM wrapper
-├── nodes/           # LangGraph workflow nodes
-├── retrieval/       # Knowledge base splitters and loaders
-├── retrievers/      # FAISSRetriever wrapper
-├── schemas/         # Pydantic validation models
-├── state/           # Graph state definitions
-├── vectorstores/    # FAISSVectorStore wrapper
-└── verifiers/       # HybridVerifier wrapper
+**Request Body**:
+```json
+{
+  "question": "How do I reset my password?"
+}
 ```
 
----
-
-## 15. Engineering Decisions
-
-- **LangGraph**: Enables cyclic workflows (verify-retry loops), which are not supported by linear chains.
-- **FAISS**: Provides fast, local vector searches without external database dependencies.
-- **Local Inference**: Eliminates cloud API costs and keeps data within the local network.
-- **Plugin Architecture**: Decouples graph nodes from specific implementations, allowing components to be easily swapped.
-- **Dependency Injection**: Resolves components through a central registry to simplify testing and mocking.
+#### `POST /explain`
+Executes the support pipeline and appends detailed explainability timelines and source coverage metrics.
 
 ---
 
-## 16. Testing & Quality
+### System & Diagnostics Endpoints
 
-We use `pytest` to run automated tests:
+#### `GET /health`
+Returns server operational status and target profile.
+
+#### `GET /system/status`
+Exposes CPU/RAM footprints, CUDA availability, loaded model singletons, and FAISS vector store MD5 signatures.
+
+---
+
+### Developer Debug Endpoints (`DEBUG_MODE=True`)
+
+- **`GET /debug/history`**: Returns recent query session summaries.
+- **`GET /debug/session/{request_id}`**: Renders the exact graph path (Mermaid syntax) and execution timeline for a request.
+- **`GET /debug/metrics`**: Displays aggregated per-node timing statistics (retrieval, generation, verification).
+
+---
+
+## Testing & Quality Assurance
+
+AgentFlow AI includes a Pytest suite covering unit components, LangGraph node transitions, hybrid verifiers, and load performance boundaries:
+
 ```bash
+# Run complete test suite
 python -m pytest
-```
 
-Mypy static type checking is configured:
-```bash
+# Run static type checking
 python -m mypy app
 ```
 
 ---
 
-## 17. Performance
+## Performance & Observability
 
-Latencies depend on your local hardware:
-- **Retrieval Latency**: Generally under 50ms using FAISS.
-- **Generation Latency**: Depends on CPU/GPU capabilities.
-- **Verification Latency**: Generally under 20ms.
-- **Total Latency**: Accessible via `GET /debug/metrics`.
+AgentFlow AI measures per-stage execution latencies across the entire request lifecycle.
 
----
+Rather than publishing hardcoded benchmark claims that vary by hardware, AgentFlow AI exposes exact timing metrics via its diagnostics layer:
+- **Retrieval Duration** (`retriever_time_ms`)
+- **Generation Duration** (`generation_time_ms`)
+- **Verification Duration** (`verification_time_ms`)
+- **Total Execution Duration** (`total_execution_time_ms`)
 
-## 18. Security Considerations
-
-- **Secrets**: Store sensitive credentials in `.env` files (never commit them to version control).
-- **Endpoint Protection**: Debug endpoints `/debug/*` are disabled in production (`DEBUG_MODE=False`).
-- **Data Isolation**: All text parsing and generation happen locally on the host machine.
+You can inspect live timing statistics for your local CPU/GPU hardware by querying:
+`GET http://127.0.0.1:8000/debug/metrics`
 
 ---
 
-## 19. Current Limitations
+## Security & Data Privacy
 
-- **Hardware Dependency**: Local inference speed is constrained by your CPU/GPU hardware.
-- **Volatile Debug Logs**: Debug session history is stored in-memory and does not persist across restarts.
-- **No Authentication**: The API does not currently enforce authentication on endpoints.
-
----
-
-## 20. Roadmap
-
-- [x] Local-first RAG pipeline
-- [x] LangGraph workflow orchestration
-- [x] Hybrid Verification Engine
-- [x] Explainability & Trace reports
-- [x] In-memory debug dashboard
-- [ ] Web frontend interface
-- [ ] API authentication layer
-- [ ] Persistent database storage for session logs
+- **100% Local Execution**: No customer questions or retrieved documents cross network boundaries or hit external cloud APIs.
+- **Strict Content Security Policy**: HTTP middleware sets strict security headers (`X-Frame-Options`, `X-XSS-Protection`, `Content-Security-Policy`).
+- **Production Guardrails**: All debug endpoints (`/debug/*`) are automatically disabled in production configurations (`DEBUG_MODE=False`).
 
 ---
 
-## 21. Demo
+## What AgentFlow AI Does NOT Solve Yet (Honest Limitations)
 
-*A placeholder for a video demo or screenshot.*
+We believe engineering transparency builds credibility:
+
+- ❌ **Hardware Bound**: Local LLM generation latency directly depends on host CPU/GPU performance.
+- ❌ **In-Memory Debug Store**: Developer session history is maintained in volatile memory and resets on server restart.
+- ❌ **No Built-in Authentication**: API endpoints currently expect an upstream API Gateway or proxy for client auth.
+- ❌ **Probabilistic Verification**: Semantic verifications reduce hallucinations significantly but cannot guarantee 100% mathematical certainty.
+
+> *The goal of AgentFlow AI is not to claim perfect AI. The goal is to build an architectural framework where failures are detectable, traceable, and recoverable.*
 
 ---
 
-## 22. License
+## Roadmap
+
+- [x] Local-first RAG pipeline (FAISS + SentenceTransformers)
+- [x] LangGraph cyclic workflow state machine
+- [x] Hybrid Verification Engine (Rules + Semantic check)
+- [x] Execution Trace & Explainability Report builder
+- [x] In-memory developer session store & debug metrics
+- [ ] Web frontend user interface
+- [ ] Persistent database storage for historical sessions
+- [ ] Multi-document format parser (PDF, DOCX)
+- [ ] Enterprise API Key Authentication middleware
+
+---
+
+## License
 
 Distributed under the [MIT License](LICENSE).
 
@@ -451,8 +374,7 @@ Distributed under the [MIT License](LICENSE).
 
 ## Project Philosophy
 
-> Reliable AI isn't defined by how confidently it answers. It's defined by how confidently you can trust the answer.
+> *Reliable AI isn't defined by how confidently it answers. It's defined by how confidently you can trust the answer.*
 
 ### AgentFlow AI
-
-Retrieve. Verify. Explain.
+**Retrieve. Verify. Explain.**
