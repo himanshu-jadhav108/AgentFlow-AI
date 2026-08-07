@@ -59,34 +59,34 @@ graph TD;
 
 ```mermaid
 graph TB;
-    classDef client fill:#3498db,stroke:#2980b9,color:#fff;
-    classDef app fill:#2ecc71,stroke:#27ae60,color:#fff;
-    classDef graph fill:#f39c12,stroke:#d35400,color:#fff;
-    classDef verify fill:#e74c3c,stroke:#c0392b,color:#fff;
+    classDef styleClient fill:#3498db,stroke:#2980b9,color:#fff;
+    classDef styleApp fill:#2ecc71,stroke:#27ae60,color:#fff;
+    classDef styleGraph fill:#f39c12,stroke:#d35400,color:#fff;
+    classDef styleVerify fill:#e74c3c,stroke:#c0392b,color:#fff;
 
     subgraph Client Layer
-        U[Client Browser]:::client;
+        U[Client Browser]:::styleClient;
     end
 
     subgraph FastAPI Web Service
-        API[FastAPI Router]:::app;
-        Middle[Middlewares / Rate Limits]:::app;
-        Cache[Cache Manager]:::app;
+        API[FastAPI Router]:::styleApp;
+        Middle[Middlewares / Rate Limits]:::styleApp;
+        Cache[Cache Manager]:::styleApp;
     end
 
     subgraph LangGraph State Machine
-        START:::graph --> Triage:::graph;
-        Triage -->|Answerable| Retrieve:::graph;
-        Retrieve --> Generate:::graph;
-        Generate --> VerifyNode:::graph;
+        START:::styleGraph --> Triage:::styleGraph;
+        Triage -->|Answerable| Retrieve:::styleGraph;
+        Retrieve --> Generate:::styleGraph;
+        Generate --> VerifyNode:::styleGraph;
         VerifyNode -->|Fail & Retries < 3| Generate;
-        VerifyNode -->|Pass / Fail-Safe| END:::graph;
+        VerifyNode -->|Pass / Fail-Safe| END:::styleGraph;
     end
 
     subgraph Local Context & DI Registry
         Registry[ComponentRegistry] --> FAISS[FAISS Vector Store];
         Registry --> LLM[Local Qwen LLM];
-        Registry --> Verifier[Hybrid Verifier]:::verify;
+        Registry --> Verifier[Hybrid Verifier]:::styleVerify;
     end
 
     U --> API;
@@ -242,13 +242,13 @@ Retrieval-Augmented Generation alone does not guarantee accuracy, as LLMs can st
 
 ```mermaid
 graph TD;
-    classDef pass fill:#2ecc71,stroke:#27ae60,color:#fff;
-    classDef fail fill:#e74c3c,stroke:#c0392b,color:#fff;
+    classDef stylePass fill:#2ecc71,stroke:#27ae60,color:#fff;
+    classDef styleFail fill:#e74c3c,stroke:#c0392b,color:#fff;
 
     Gen[Generated Response] --> Rule[Rule-Based Validation];
-    Rule -->|Fail| Retry[Loop Retry / Self-Correction]:::fail;
+    Rule -->|Fail| Retry[Loop Retry / Self-Correction]:::styleFail;
     Rule -->|Pass| Sem[Semantic Verification];
-    Sem -->|Pass| Pass[Return Response]:::pass;
+    Sem -->|Pass| Pass[Return Response]:::stylePass;
     Sem -->|Fail| Retry;
 ```
 

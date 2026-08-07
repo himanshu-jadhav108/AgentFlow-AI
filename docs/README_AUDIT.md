@@ -14,6 +14,7 @@ This audit report summarizes the improvements, validations, and constraints veri
 ## 2. Broken Items & filesystem Paths Discovered
 - **FileSystem URIs**: Discovered and removed local filesystem paths (e.g. `file:///D:/Projects/...` links) in the README, replacing them with relative project links.
 - **Dead links**: Fixed links to point to active files (like `docs/interview_guide.md` and the `LICENSE` file).
+- **Mermaid Class Conflict**: Replaced classDef style names `graph`, `pass`, and `fail` in Mermaid blocks with unique identifiers (`styleGraph`, `stylePass`, `styleFail`) to eliminate conflicts with Mermaid syntax keywords.
 
 ---
 
