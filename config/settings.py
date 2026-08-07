@@ -105,6 +105,12 @@ class Settings(BaseSettings):
         default=1024 * 1024, description="Maximum payload size in bytes (default 1MB)."
     )
 
+    # Debug, Explainability & Dashboard Options
+    DEBUG_MODE: bool = Field(default=True, description="Enable debug diagnostics and execution traces.")
+    ENABLE_DASHBOARD: bool = Field(default=True, description="Enable developer debugging dashboard.")
+    MAX_DEBUG_HISTORY: int = Field(default=100, description="Maximum session logs to retain in memory history.")
+    EXPOSE_DEBUG_ENDPOINTS: bool = Field(default=True, description="Expose debug endpoints.")
+
     def __init__(self, **values: Any) -> None:
         import importlib
         import os

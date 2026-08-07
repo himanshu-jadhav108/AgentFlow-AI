@@ -13,7 +13,9 @@ class AnswerGenerator:
     """Orchestrator for prompt formulation and local model queries."""
 
     def __init__(self) -> None:
-        self.inference_manager = InferenceManager()
+        from app.core.registry import dependency_container
+
+        self.inference_manager = dependency_container.get_llm()
 
     def generate(
         self,

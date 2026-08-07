@@ -16,15 +16,20 @@ def retrieve_node(state: AgentState) -> dict:
     Returns:
         dict: State updates containing retrieved chunks, sources, and similarity confidence.
     """
+    import time
+    from app.core.registry import dependency_container
+    from app.core.trace import record_node_trace
+
+    start_time = time.time()
     logger.info("--- ENTERING NODE: RETRIEVE ---")
     question = state.get("question", "")
 
-    # Instantiate Phase 2 Retriever
-    retriever = SemanticRetriever()
+    # Retrieve components via Dependency Injection registry
+    retriever = dependency_container.get_retriever()
 
     # Search (defaults to k=4)
     try:
-        results = retriever.retrieve(query=question)
+        results = retriever.retrieve(query=question, top_k=4, min_similarity=0.0)
     except Exception as e:
         logger.error(f"Error querying retriever from graph node: {e}")
         results = []
@@ -39,7 +44,7 @@ def retrieve_node(state: AgentState) -> dict:
         f"Retrieve node completed. Found {len(results)} matching chunks. Top confidence: {confidence:.4f}"
     )
 
-    return {
+    updates = {
         "selected_chunks": results,
         "sources": sources,
         "confidence": confidence,
@@ -48,3 +53,14 @@ def retrieve_node(state: AgentState) -> dict:
             f"Top match confidence: {confidence:.4f}"
         ],
     }
+
+    record_node_trace(
+        state=state,
+        node_name="retrieve",
+        start_time=start_time,
+        input_summary=f"Query: {question}",
+        output_summary=f"Found: {len(results)} chunks | Top confidence: {confidence:.4f}",
+        decision="generate",
+    )
+    updates["execution_trace"] = state["execution_trace"]
+    return updates

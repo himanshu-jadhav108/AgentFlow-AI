@@ -61,3 +61,6 @@ class AgentState(TypedDict):
 
     timestamps: Dict[str, str]
     """Timestamp records tracking initialization, node transitions, and total execution latencies."""
+
+    execution_trace: Dict[str, Any]
+    """The diagnostic trace capturing node paths, timing, and pipeline metrics."""

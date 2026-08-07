@@ -203,6 +203,25 @@ async def ask_agent(
             },
         }
 
+        # Expose diagnostics explainability and execution traces when in DEBUG mode
+        if settings.DEBUG_MODE:
+            from app.explainability.explanation_builder import ExplanationBuilder
+            from app.dashboard.dashboard_service import DashboardService
+
+            report = ExplanationBuilder.build_report(final_state)
+            response_payload["explainability"] = report.model_dump()
+            response_payload["execution_trace"] = final_state.get("execution_trace", {})
+
+            # Capture debugging snapshots inside session store
+            req_id = final_state.get("execution_trace", {}).get("request_id", f"req-{int(time.time())}")
+            DashboardService.capture_run(
+                request_id=req_id,
+                question=sanitized_question,
+                classification=classification,
+                final_state=final_state,
+                response=response_payload,
+            )
+
         # 6. Save successful responses in query cache
         if not requires_human and classification in ["answerable", "out_of_scope"]:
             cache_manager.set_answer(sanitized_question, response_payload)
@@ -383,3 +402,122 @@ async def get_system_status() -> Dict[str, Any]:
         "memory_rss_mb": round(memory_rss_mb, 2),
         "system_ready": system_ready,
     }
+
+
+@router.post(
+    "/explain",
+    status_code=status.HTTP_200_OK,
+    summary="Explain Query Pipeline",
+    description="Executes RAG workflow and returns the answer alongside the full explainability report.",
+)
+async def explain_query(
+    request: AskRequest,
+    agent_graph=Depends(get_agent_graph),
+) -> Dict[str, Any]:
+    """Runs workflow graph and returns answer along with explainability report."""
+    sanitized_question = RequestValidator.validate_question(request.question)
+    try:
+        initial_state = {
+            "question": sanitized_question,
+            "classification": "clarification",
+            "conversation_history": [],
+            "retrieved_documents": [],
+            "selected_chunks": [],
+            "answer": None,
+            "confidence": 0.0,
+            "sources": [],
+            "requires_human": False,
+            "retry_count": 0,
+            "max_retries": settings.MAX_RETRIES,
+            "verification_status": "unverified",
+            "metadata": {},
+            "execution_log": [],
+            "timestamps": {},
+        }
+        final_state = await agent_graph.ainvoke(initial_state)
+
+        from app.explainability.explanation_builder import ExplanationBuilder
+
+        report = ExplanationBuilder.build_report(final_state)
+
+        return {
+            "answer": final_state.get(
+                "answer", "I could not find supporting information."
+            ),
+            "explainability": report.model_dump(),
+        }
+    except Exception as e:
+        logger.exception(f"Explain query run failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def check_debug_enabled() -> None:
+    """Raises HTTPException if debug features are disabled."""
+    if not settings.DEBUG_MODE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Developer debug dashboard is disabled in production environments.",
+        )
+
+
+@router.get(
+    "/debug/session/{request_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Get Debug Session Report",
+    description="Exposes timing charts and path details for a request ID. Protected by debug mode.",
+)
+async def get_debug_session(request_id: str) -> Any:
+    """Retrieves debug session report."""
+    check_debug_enabled()
+    from app.dashboard.dashboard_service import DashboardService
+
+    report = DashboardService.get_session_report(request_id)
+    if not report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Debug session '{request_id}' not found.",
+        )
+    return report
+
+
+@router.get(
+    "/debug/history",
+    status_code=status.HTTP_200_OK,
+    summary="Get Debug History Logs",
+    description="Returns light summaries of all recent requests. Protected by debug mode.",
+)
+async def get_debug_history() -> Any:
+    """Retrieves debug history."""
+    check_debug_enabled()
+    from app.dashboard.dashboard_service import DashboardService
+
+    return DashboardService.get_history()
+
+
+@router.get(
+    "/debug/metrics",
+    status_code=status.HTTP_200_OK,
+    summary="Get Aggregated Debug Metrics",
+    description="Returns min, max, and average latencies across stored debug sessions. Protected by debug mode.",
+)
+async def get_debug_metrics() -> Any:
+    """Retrieves debug metrics."""
+    check_debug_enabled()
+    from app.dashboard.dashboard_service import DashboardService
+
+    return DashboardService.get_aggregated_metrics()
+
+
+@router.delete(
+    "/debug/history",
+    status_code=status.HTTP_200_OK,
+    summary="Clear Debug History Logs",
+    description="Purges in-memory stored session histories. Protected by debug mode.",
+)
+async def clear_debug_history() -> Dict[str, Any]:
+    """Clears debug history."""
+    check_debug_enabled()
+    from app.dashboard.dashboard_service import DashboardService
+
+    DashboardService.clear_history()
+    return {"success": True, "message": "Debug session history purged."}

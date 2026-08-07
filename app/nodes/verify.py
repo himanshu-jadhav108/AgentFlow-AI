@@ -38,8 +38,11 @@ def verify_node(state: AgentState) -> dict:
         ),
     }
 
-    # Execute Hybrid Verification Pipeline
-    verifier = HybridVerifier()
+    node_start_time = time.time()
+    # Execute Hybrid Verification Pipeline via Dependency Injection
+    from app.core.registry import dependency_container
+    verifier = dependency_container.get_verifier()
+
     res = verifier.verify(
         question=question,
         answer_payload=answer_payload,
@@ -96,7 +99,9 @@ def verify_node(state: AgentState) -> dict:
     metrics.record_verification(latency_ms)
     metrics.record_retries(1 if not passed else 0)
 
-    return {
+    decision = "end" if (passed or retry_count >= max_retries) else "generate"
+
+    updates = {
         "answer": answer,
         "verification_status": verification_status,
         "retry_count": retry_count,
@@ -104,3 +109,15 @@ def verify_node(state: AgentState) -> dict:
         "metadata": meta,
         "execution_log": [log_msg],
     }
+
+    from app.core.trace import record_node_trace
+    record_node_trace(
+        state=state,
+        node_name="verify",
+        start_time=node_start_time,
+        input_summary=f"Answer length: {len(answer)} chars",
+        output_summary=f"Passed: {passed} | Status: {verification_status} | Confidence: {confidence:.2f}",
+        decision=decision,
+    )
+    updates["execution_trace"] = state["execution_trace"]
+    return updates

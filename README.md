@@ -1,14 +1,70 @@
-# AgentFlow AI: Local Customer Support Agent
+# ![AgentFlow AI Logo](assets/AgentFlow-AI-Logo.png)
 
-AgentFlow AI is a local AI Customer Support Agent built using Python 3.11+, FastAPI, LangGraph, LangChain, FAISS, and local embedding/LLM systems.
+AgentFlow AI is a production-grade, local-first Customer Support Agent backend. Built using FastAPI, LangGraph, PyTorch, HuggingFace Transformers, FAISS, and Pydantic, it operates entirely offline on host CPU/GPU resources. 
 
-The system features a Clean Architecture, dynamic environment configuration profiles, automatic startup cache synchronization, timing metrics, and is fully containerized.
+The system implements Clean Architecture, dynamic settings profiles, automatic startup synchronization (model weights caching and database hashes), hybrid validation checks, and an execution trace dashboard.
 
 ---
 
-## Quick Start (Python Installation)
+## Key Features
+- **Local-First Execution**: No cloud APIs (OpenAI/Gemini). Embeddings and LLMs run locally on CPU/CUDA.
+- **Clean Architecture & Plugins**: Interfaces decouple retrieve, generation, and verify subsystems, managed by a Central Component Registry.
+- **Self-Correction & Hybrid Verification**: Combines fast rule-based validation with semantic verification in a LangGraph retry loop.
+- **Pipeline Explainability**: Exposes detailed execution paths, timelines, and confidence scores without revealing model chain-of-thought.
+- **Developer Debug Dashboard**: Slides log diagnostics histories in memory with aggregated latency metrics.
 
-To set up, validate system resources, download models, build index files, and run all tests in one command:
+---
+
+## Technology Stack
+- **Core**: Python 3.11+, FastAPI (ASGI server)
+- **AI Orchestration**: LangGraph, LangChain
+- **Vector Database**: FAISS (Facebook AI Similarity Search)
+- **Local Models**: SentenceTransformers (embeddings), HuggingFace Causal LM (generations)
+- **Configuration**: Pydantic Settings
+- **Testing**: Pytest
+
+---
+
+## System Architecture
+
+```mermaid
+graph TD;
+    API[FastAPI Router] --> Graph[LangGraph State Machine];
+    
+    subgraph Core Abstractions
+        Registry[ComponentRegistry] --> BaseRetriever;
+        Registry --> BaseLLM;
+        Registry --> BaseVerifier;
+    end
+    
+    subgraph LangGraph Nodes
+        START --> Triage;
+        Triage -->|Answerable| Retrieve;
+        Retrieve --> Generate;
+        Generate --> Verify;
+        Verify -->|Passed / Max Retries| END;
+        Verify -->|Failed| Generate;
+        Triage -->|Clarify| Clarification;
+        Triage -->|Escalate| Escalation;
+        Triage -->|Off-Topic| OutOfScope;
+        Clarification --> END;
+        Escalation --> END;
+        OutOfScope --> END;
+    end
+    
+    subgraph Debugging & Analytics
+        Graph --> Trace[Execution Trace];
+        Graph --> Explain[Explainability Engine];
+        Graph --> Dashboard[Debug Dashboard Store];
+    end
+```
+
+---
+
+## Installation & Quick Start
+
+### Local Python Setup
+Initialize the virtual environment, validate hardware resources, download models, build index files, and run all checks:
 
 ```bash
 # 1. Create a virtual environment inheriting system packages (recommended for pre-compiled PyTorch/FAISS)
@@ -19,124 +75,72 @@ python -m venv --system-site-packages .venv
 python scripts/setup.py
 ```
 
----
-
-## Docker Installation
-
-To build images, mount cache volumes (so weights are never downloaded twice), and deploy the API:
+### Docker Compose Setup
+To build images, mount caches, and start the API:
 
 ```bash
 docker compose up --build
 ```
-This mounts:
-- `huggingface_cache` to persist LLM weights.
-- `vector_data` to persist FAISS index files.
+This maps volumes to persist large LLM weights and vector indices across container builds.
 
 ---
 
-## Project Structure
-```
-agentflow_ai/
-│
-├── app/                     # Core application logic
-│   ├── api/                 # REST endpoints and middlewares
-│   │   ├── routes.py
-│   │   ├── middleware.py
-│   │   └── exception_handlers.py
-│   │
-│   ├── services/            # Managers and services
-│   │   ├── model_manager.py # Checks and pre-downloads weights
-│   │   └── index_manager.py # Checks and auto-rebuilds FAISS indexes
-│   │
-│   ├── nodes/               # Single-responsibility graph nodes
-│   ├── graph/               # LangGraph builder and visualizations
-│   ├── verification/        # Decoupled verification engine
-│   └── schemas/             # Pydantic validation schemas
-│
-├── config/                  # Dynamic environment configurations
-│   ├── development.py       # Developer overrides
-│   ├── production.py        # Production overrides
-│   ├── testing.py           # Testing overrides
-│   └── settings.py          # Unified profile loader
-│
-├── scripts/                 # CLI tools
-│   ├── setup.py             # Installs dependencies and runs checks
-│   ├── rebuild_index.py     # Triggers vector index regeneration
-│   ├── download_models.py   # Pre-downloads model weights
-│   └── clean_cache.py       # Clears in-memory caching layers
-│
-├── examples/                # API Request/Response schema examples
-│   ├── sample_requests.json
-│   └── sample_responses.json
-│
-├── docs/                    # Architectural and deployment guides
-│   ├── architecture/
-│   ├── development/
-│   └── deployment/
-│   └── phase_06.md
-```
+## Configuration Variables
+Configurations are loaded from the environment or `.env` files:
+
+| Environment Variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `APP_ENV` | `str` | `"development"` | Target profile (`development`, `production`, `testing`) |
+| `LLM_MODEL_NAME` | `str` | `"Qwen/Qwen2.5-0.5B-Instruct"` | Model weights path on Hugging Face hub |
+| `EMBEDDING_MODEL_NAME` | `str` | `"sentence-transformers/all-MiniLM-L6-v2"` | Embedding model path |
+| `DEBUG_MODE` | `bool` | `True` | Exposes execution traces and explainability |
+| `ENABLE_CACHE` | `bool` | `True` | Enables API memory caching |
 
 ---
 
-## Automatic Startup Validation
-On booting the FastAPI application:
-1. **Model Cache check**: The server verifies if model weights are present. If missing, it downloads them from Hugging Face hub.
-2. **FAISS index check**: The server scans for database files and hashes all knowledge base files. If files are missing or modified, it rebuilds the index automatically.
-3. **Graph boot**: Compiles the graph and starts the API server.
+## API Reference
 
----
+### 1. Ask Support Agent (`POST /ask`)
+Queries the support pipeline.
 
-## Configuration Profiles
-Manage profile configurations by setting `APP_ENV` environment variable:
-- `development`: Verbose logging and short cache durations.
-- `production`: Custom payload bounds and longer cache TTLs.
-- `testing`: Disables cache to allow clean test executions.
-
-### Verifier options inside `.env`:
-```env
-# Target profile (development / production / testing)
-APP_ENV=development
-
-# Enable/disable verifier layers
-ENABLE_RULE_VERIFICATION=true
-ENABLE_SEMANTIC_VERIFICATION=true
-
-# Cache configurations
-ENABLE_CACHE=true
-CACHE_TTL_SECONDS=300
-```
-
----
-
-## Diagnostics Status Endpoint (`GET /system/status`)
-Provides deep system health diagnostics:
+**Request Sample**:
 ```json
 {
-  "python_version": "3.11.4 (main, Jun 5 2023, 11:31:11)",
-  "cuda_available": false,
-  "gpu_details": "N/A",
-  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
-  "model_loaded": true,
-  "vector_index_path": "data/vectorstore",
-  "vector_index_exists": true,
-  "vector_index_metadata": {
-    "knowledge_hash": "d41d8cd98f00b204e9800998ecf8427e",
-    "indexing_time_s": 0.84,
-    "documents_processed": 5,
-    "chunks_created": 25
-  },
-  "knowledge_base_document_count": 5,
-  "embedding_model_name": "sentence-transformers/all-MiniLM-L6-v2",
-  "memory_rss_mb": 248.12,
-  "system_ready": true
+  "question": "How do I reset my password?"
 }
 ```
 
+**Response Sample (DEBUG_MODE=True)**:
+```json
+{
+  "classification": "answerable",
+  "answer": "To reset your password, navigate to the settings page and click 'Reset'.",
+  "confidence": 0.94,
+  "sources": ["password_policy.md"],
+  "requires_human": false,
+  "reason": "Supported by database context.",
+  "metadata": {
+    "generation_latency_ms": 110.45,
+    "verification_latency_ms": 12.30
+  },
+  "explainability": {
+    "retrieval_summary": "Retrieved 4 chunks from 1 source file.",
+    "timeline": [
+      {
+        "event": "Request Received",
+        "timestamp": "2026-08-07 17:30:00",
+        "duration_ms": 1.1,
+        "summary": "Init"
+      }
+    ]
+  }
+}
+```
+
+### 2. Diagnostics Health (`GET /system/status`)
+Exposes hardware information, loaded model weights, memory limits, and vector store metadata signatures.
+
 ---
 
-## Verification & Testing
-Run pytest to verify all 35 tests covering units, integrations, and load performance limits:
-
-```bash
-python -m pytest
-```
+## Contributing & License
+Distributed under the MIT License. See [LICENSE](file:///D:/Projects/AgentFlow%20AI/LICENSE) for more information.

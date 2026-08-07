@@ -15,6 +15,10 @@ def escalation_node(state: AgentState) -> dict:
     Returns:
         dict: State updates routing the case to a human.
     """
+    import time
+    from app.core.trace import record_node_trace
+
+    start_time = time.time()
     logger.info("--- ENTERING NODE: ESCALATION ---")
 
     # Retrieve priority from metadata (defaulting to 3 if not present)
@@ -38,9 +42,20 @@ def escalation_node(state: AgentState) -> dict:
         }
     )
 
-    return {
+    updates = {
         "requires_human": True,
         "answer": escalation_msg,
         "metadata": meta,
         "execution_log": [f"Escalation node: Escalated to human. Reason: {reason}"],
     }
+
+    record_node_trace(
+        state=state,
+        node_name="escalation",
+        start_time=start_time,
+        input_summary=f"Escalation reason: {reason}",
+        output_summary=f"Escalated (Priority {priority}).",
+        decision="end",
+    )
+    updates["execution_trace"] = state["execution_trace"]
+    return updates

@@ -46,3 +46,11 @@ class AskResponse(BaseModel):
         default_factory=dict,
         description="Optional execution context tracking priority, categories, and latency benchmarks.",
     )
+    explainability: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Detailed explainability report, exposed only in debug mode.",
+    )
+    execution_trace: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Detailed execution trace, exposed only in debug mode.",
+    )

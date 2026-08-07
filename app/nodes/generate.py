@@ -4,6 +4,7 @@ import time
 
 from app.generation.answer_generator import AnswerGenerator
 from app.state.agent_state import AgentState
+from app.core.trace import record_node_trace
 from core.logger import logger
 
 
@@ -34,7 +35,7 @@ def generate_node(state: AgentState) -> dict:
         )
         query_to_submit = f"{question}\n\n[SYSTEM REVISION]:\n{retry_feedback}"
 
-    start_time = time.time()
+    node_start_time = time.time()
     generator = AnswerGenerator()
 
     try:
@@ -44,7 +45,7 @@ def generate_node(state: AgentState) -> dict:
             conversation_history=conversation_history,
         )
 
-        latency_ms = (time.time() - start_time) * 1000
+        latency_ms = (time.time() - node_start_time) * 1000
         from monitoring.metrics import metrics
 
         metrics.record_generation(latency_ms)
@@ -59,7 +60,7 @@ def generate_node(state: AgentState) -> dict:
 
         logger.info(f"Generate node: Generated response in {latency_ms:.2f}ms.")
 
-        return {
+        updates = {
             "answer": answer,
             "sources": citations if citations else state.get("sources", []),
             "metadata": meta,
@@ -69,13 +70,23 @@ def generate_node(state: AgentState) -> dict:
             ],
         }
 
+        record_node_trace(
+            state=state,
+            node_name="generate",
+            start_time=node_start_time,
+            input_summary=f"Query: {query_to_submit}",
+            output_summary=f"Answer length: {len(answer)} chars | Cited: {citations}",
+            decision="verify",
+        )
+        updates["execution_trace"] = state["execution_trace"]
+        return updates
+
     except Exception as e:
-        latency_ms = (time.time() - start_time) * 1000
+        latency_ms = (time.time() - node_start_time) * 1000
         meta["generation_latency_ms"] = latency_ms
         logger.error(f"Generate node: Inference failed: {e}")
 
-        # Return empty fields to allow the verifier node to catch the error
-        return {
+        updates = {
             "answer": "",
             "sources": [],
             "metadata": meta,
@@ -83,3 +94,14 @@ def generate_node(state: AgentState) -> dict:
                 f"Generate node: Inference failed after {latency_ms:.2f}ms. Error: {e}"
             ],
         }
+
+        record_node_trace(
+            state=state,
+            node_name="generate",
+            start_time=node_start_time,
+            input_summary=f"Query: {query_to_submit}",
+            output_summary=f"Failure: {e}",
+            decision="verify",
+        )
+        updates["execution_trace"] = state["execution_trace"]
+        return updates

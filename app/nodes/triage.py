@@ -16,6 +16,10 @@ def triage_node(state: AgentState) -> dict:
     Returns:
         dict: State updates containing classification and triage metadata.
     """
+    import time
+    from app.core.trace import record_node_trace
+
+    start_time = time.time()
     logger.info("--- ENTERING NODE: TRIAGE ---")
     question = state.get("question", "").strip()
 
@@ -69,6 +73,7 @@ def triage_node(state: AgentState) -> dict:
                 "game",
                 "sports",
                 "music",
+                "job",
             ]
             for kw in off_topic_keywords:
                 if kw in question.lower():
@@ -87,10 +92,21 @@ def triage_node(state: AgentState) -> dict:
         }
     )
 
-    return {
+    updates = {
         "classification": classification,
         "metadata": meta,
         "execution_log": [
             f"Triage node: Classified query as '{classification}'. Reason: {reason}"
         ],
     }
+
+    record_node_trace(
+        state=state,
+        node_name="triage",
+        start_time=start_time,
+        input_summary=f"Query: {question}",
+        output_summary=f"Classification: {classification} | Reason: {reason}",
+        decision=classification,
+    )
+    updates["execution_trace"] = state["execution_trace"]
+    return updates

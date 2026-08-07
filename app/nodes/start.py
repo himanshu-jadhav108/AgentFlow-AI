@@ -15,10 +15,18 @@ def start_node(state: AgentState) -> dict:
     Returns:
         dict: State updates containing initialization values.
     """
+    import time
+    from app.core.trace import init_execution_trace, record_node_trace
+
+    start_time = time.time()
     logger.info("--- ENTERING NODE: START ---")
     now_str = datetime.datetime.now().isoformat()
 
-    return {
+    metadata = state.get("metadata") or {}
+    request_id = metadata.get("request_id", f"req-{int(start_time)}")
+    trace = init_execution_trace(request_id, state.get("question", ""))
+
+    updates = {
         "execution_log": ["Initialized state in START node."],
         "timestamps": {"start_time": now_str},
         "retry_count": 0,
@@ -26,4 +34,15 @@ def start_node(state: AgentState) -> dict:
         "requires_human": False,
         "confidence": 0.0,
         "verification_status": "unverified",
+        "execution_trace": trace,
     }
+
+    record_node_trace(
+        state=updates,
+        node_name="start",
+        start_time=start_time,
+        input_summary=f"Question: {state.get('question')}",
+        output_summary="Initialized state trace.",
+        decision="triage",
+    )
+    return updates
