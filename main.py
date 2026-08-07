@@ -1,21 +1,26 @@
 """Main entry point for the FastAPI application of AgentFlow AI."""
 
 from contextlib import asynccontextmanager
-from typing import Dict, Any
+from typing import Dict, Any, List
 import time
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.exceptions import RequestValidationError
 from config.settings import settings
 from core.logger import setup_logging, logger
-from app.schemas.retrieval import SearchRequest, SearchResponse, IndexResponse
+from app.schemas.retrieval import SearchRequest, SearchResponse, IndexResponse, GraphRunRequest, GraphRunResponse
 from app.services.indexing_service import IndexingService
 from app.retrieval.retriever import SemanticRetriever
 from models.responses import HealthResponse, VersionResponse, ErrorResponse
 from core.exceptions import AppException, app_exception_handler, validation_exception_handler, generic_exception_handler
+from app.graph.builder import build_graph
+from app.graph.visualization import generate_graph_visualizations
 
 # Initialize unified loguru logging
 setup_logging()
+
+# Compile the agent orchestration graph once
+agent_graph = build_graph()
 
 
 @asynccontextmanager
@@ -25,6 +30,11 @@ async def lifespan(app: FastAPI):
     logger.info(f"Configuration: ENV={settings.APP_ENV}, PORT={settings.PORT}")
     logger.info(f"Local AI Config: LLM={settings.LLM_PROVIDER}:{settings.LLM_MODEL_NAME}")
     logger.info(f"Vector Database Path: {settings.VECTOR_DB_PATH}")
+
+    # Generate graph visualizations on startup
+    logger.info("Generating agent workflow visualizations (Mermaid, ASCII, PNG)...")
+    generate_graph_visualizations(agent_graph)
+
     yield
     logger.info("Shutting down AgentFlow AI API Service...")
 
@@ -106,6 +116,68 @@ async def search_index(request: SearchRequest) -> SearchResponse:
         )
     except Exception as e:
         logger.exception(f"Unexpected error executing search: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/graph/run", response_model=GraphRunResponse)
+async def run_agent_graph(request: GraphRunRequest) -> GraphRunResponse:
+    """Execute the support agent LangGraph workflow for the given question."""
+    logger.info(f"API request received: Run agent graph for question '{request.question}'")
+    try:
+        # Initialize default workflow state
+        initial_state = {
+            "question": request.question,
+            "classification": "clarification",
+            "conversation_history": [],
+            "retrieved_documents": [],
+            "selected_chunks": [],
+            "answer": None,
+            "confidence": 0.0,
+            "sources": [],
+            "requires_human": False,
+            "retry_count": 0,
+            "max_retries": 3,
+            "verification_status": "unverified",
+            "metadata": {},
+            "execution_log": [],
+            "timestamps": {},
+        }
+
+        # Execute compiled graph asynchronously
+        final_state = await agent_graph.ainvoke(initial_state)
+
+        # Extract path executed from log trace
+        node_path = []
+        for log in final_state.get("execution_log", []):
+            if "START" in log or "start" in log.lower():
+                node_path.append("start")
+            elif "triage" in log.lower():
+                node_path.append("triage")
+            elif "retrieve" in log.lower():
+                node_path.append("retrieve")
+            elif "clarification" in log.lower():
+                node_path.append("clarification")
+            elif "escalation" in log.lower() or "escalate" in log.lower():
+                node_path.append("escalation")
+            elif "out-of-scope" in log.lower() or "out of scope" in log.lower():
+                node_path.append("out_of_scope")
+            elif "end" in log.lower():
+                node_path.append("end")
+
+        # Deduplicate consecutive transitions to keep the path clean
+        deduped_path = []
+        for node in node_path:
+            if not deduped_path or deduped_path[-1] != node:
+                deduped_path.append(node)
+
+        return GraphRunResponse(
+            question=request.question,
+            classification=final_state.get("classification", "unknown"),
+            node_path=deduped_path,
+            final_state=final_state,
+        )
+    except Exception as e:
+        logger.exception(f"Unexpected error executing graph workflow: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

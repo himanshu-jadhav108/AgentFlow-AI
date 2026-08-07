@@ -58,3 +58,23 @@ class IndexResponse(BaseModel):
     documents_processed: int = Field(..., description="Number of source documents loaded and cleaned.")
     chunks_created: int = Field(..., description="Number of vector chunks generated and indexed.")
     message: str = Field(..., description="Informative status message.")
+
+
+class GraphRunRequest(BaseModel):
+    """Schema representing a request to execute the support agent workflow."""
+
+    question: str = Field(
+        ...,
+        description="The support question or query text to submit to the agent.",
+        min_length=1,
+    )
+
+
+class GraphRunResponse(BaseModel):
+    """Schema representing the completed agent execution trace and final state snapshot."""
+
+    question: str = Field(..., description="The original support query question.")
+    classification: str = Field(..., description="The final classification category determined by the agent triage.")
+    node_path: List[str] = Field(..., description="The ordered sequence of graph nodes executed in this run.")
+    final_state: Dict[str, Any] = Field(..., description="Full state snapshot at the conclusion of the execution path.")
+
