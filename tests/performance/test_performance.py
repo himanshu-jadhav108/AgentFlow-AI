@@ -8,30 +8,36 @@ from config.settings import settings
 
 def test_cache_hit_miss_flow() -> None:
     """Verify in-memory query cache managers."""
-    cache = CacheManager()
-    cache.clear()
+    original_cache = settings.ENABLE_CACHE
+    settings.ENABLE_CACHE = True
 
-    # Initial query is a cache miss
-    val1 = cache.get_answer("How do I reset my password?")
-    assert val1 is None
+    try:
+        cache = CacheManager()
+        cache.clear()
 
-    # Save to cache
-    payload = {"answer": "Use settings.", "confidence": 0.9, "sources": []}
-    cache.set_answer("How do I reset my password?", payload)
+        # Initial query is a cache miss
+        val1 = cache.get_answer("How do I reset my password?")
+        assert val1 is None
 
-    # Secondary query is a cache hit
-    val2 = cache.get_answer("How do I reset my password?")
-    assert val2 is not None
-    assert val2["answer"] == "Use settings."
+        # Save to cache
+        payload = {"answer": "Use settings.", "confidence": 0.9, "sources": []}
+        cache.set_answer("How do I reset my password?", payload)
 
-    # Stats verify hit
-    stats = cache.stats
-    assert stats["answer_cache"]["hits"] == 1
-    assert stats["answer_cache"]["misses"] == 1
+        # Secondary query is a cache hit
+        val2 = cache.get_answer("How do I reset my password?")
+        assert val2 is not None
+        assert val2["answer"] == "Use settings."
 
-    # Clear cache resets stats
-    cache.clear()
-    assert cache.stats["answer_cache"]["size"] == 0
+        # Stats verify hit
+        stats = cache.stats
+        assert stats["answer_cache"]["hits"] == 1
+        assert stats["answer_cache"]["misses"] == 1
+
+        # Clear cache resets stats
+        cache.clear()
+        assert cache.stats["answer_cache"]["size"] == 0
+    finally:
+        settings.ENABLE_CACHE = original_cache
 
 
 def test_rate_limiting_middleware(client) -> None:

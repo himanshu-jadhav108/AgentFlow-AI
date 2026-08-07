@@ -302,3 +302,65 @@ async def get_graph() -> Dict[str, Any]:
         "mermaid": mermaid_content,
         "ascii": ascii_content,
     }
+
+
+@router.get(
+    "/system/status",
+    response_model=Dict[str, Any],
+    status_code=status.HTTP_200_OK,
+    summary="Get System Status Report",
+    description="Returns dynamic system status diagnostics including RAM, CUDA/GPU allocations, model loading status, and vector index states.",
+)
+async def get_system_status() -> Dict[str, Any]:
+    """Retrieves dynamic diagnostics metrics from the local server machine."""
+    import sys
+    import json
+    import psutil
+    import torch
+    from app.llm.model_loader import ModelLoader
+
+    process = psutil.Process(os.getpid())
+    memory_rss_mb = process.memory_info().rss / (1024 * 1024)
+
+    cuda_available = torch.cuda.is_available()
+    gpu_details = torch.cuda.get_device_name(0) if cuda_available else "N/A"
+
+    loader = ModelLoader()
+    model_loaded = loader._model is not None
+
+    store_path = settings.VECTOR_DB_PATH
+    faiss_file = os.path.join(store_path, "index.faiss")
+    pkl_file = os.path.join(store_path, "index.pkl")
+    index_exists = os.path.exists(faiss_file) and os.path.exists(pkl_file)
+
+    doc_dir = settings.DOCUMENTS_DIR
+    doc_count = 0
+    if os.path.exists(doc_dir):
+        doc_count = sum(1 for root, _, files in os.walk(doc_dir) for f in files if f.endswith(".md") or f.endswith(".json"))
+
+    meta_file = os.path.join(store_path, "index_metadata.json")
+    meta_info = {}
+    if os.path.exists(meta_file):
+        try:
+            with open(meta_file, "r", encoding="utf-8") as f:
+                meta_info = json.load(f)
+        except Exception:
+            pass
+
+    system_ready = index_exists and (settings.LLM_PROVIDER == "ollama" or model_loaded)
+
+    return {
+        "python_version": sys.version,
+        "cuda_available": cuda_available,
+        "gpu_details": gpu_details,
+        "model_name": settings.LLM_MODEL_NAME,
+        "model_loaded": model_loaded,
+        "vector_index_path": store_path,
+        "vector_index_exists": index_exists,
+        "vector_index_metadata": meta_info,
+        "knowledge_base_document_count": doc_count,
+        "embedding_model_name": settings.EMBEDDING_MODEL_NAME,
+        "memory_rss_mb": round(memory_rss_mb, 2),
+        "system_ready": system_ready,
+    }
+

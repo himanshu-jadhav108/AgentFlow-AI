@@ -36,6 +36,16 @@ async def lifespan(app: FastAPI):
     logger.info("Generating state visualizations (Mermaid, ASCII, PNG)...")
     generate_graph_visualizations(agent_graph)
 
+    # Automatic startup validation: check model caches and FAISS databases
+    from app.services.model_manager import ModelManager
+    from app.services.index_manager import IndexManager
+
+    logger.info("Automatic Startup: Syncing local model caches...")
+    ModelManager.download_model()
+
+    logger.info("Automatic Startup: Verifying local FAISS index status...")
+    IndexManager.ensure_index_ready()
+
     yield
     logger.info("Shutting down AgentFlow AI API Service...")
 

@@ -3,7 +3,7 @@
 Provides loaded, validated environment variables with type safety.
 """
 
-from typing import Literal
+from typing import Literal, Any
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -70,6 +70,19 @@ class Settings(BaseSettings):
     RATE_LIMIT_REQUESTS: int = Field(default=100, description="Max requests permitted in the sliding window.")
     RATE_LIMIT_WINDOW_SECONDS: int = Field(default=60, description="Sliding window duration in seconds.")
     MAX_PAYLOAD_SIZE_BYTES: int = Field(default=1024 * 1024, description="Maximum payload size in bytes (default 1MB).")
+
+    def __init__(self, **values: Any) -> None:
+        import os
+        import importlib
+        env = values.get("APP_ENV", os.getenv("APP_ENV", "development")).lower()
+        overrides = {}
+        try:
+            profile_module = importlib.import_module(f"config.{env}")
+            overrides = getattr(profile_module, "OVERRIDES", {})
+        except Exception:
+            pass
+        merged = {**overrides, **values}
+        super().__init__(**merged)
 
 
 # Instantiate settings for global project import

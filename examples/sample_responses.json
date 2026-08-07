@@ -1,0 +1,48 @@
+{
+  "ask_response": {
+    "classification": "answerable",
+    "answer": "Read-only users cannot create API keys.",
+    "confidence": 0.94,
+    "sources": ["faq.md"],
+    "requires_human": false,
+    "reason": "Grounding verification passed successfully.",
+    "metadata": {
+      "generation_latency_ms": 25.1,
+      "verification_latency_ms": 240.2
+    }
+  },
+  "search_response": {
+    "query": "reset my password",
+    "results": [
+      {
+        "chunk_id": "08c93eef774739f8_c0",
+        "document_id": "08c93eef774739f8",
+        "source": "faq.md",
+        "text": "How do I reset my password? Go to Settings -> Account.",
+        "score": 0.85,
+        "confidence_score": 0.85,
+        "metadata": {}
+      }
+    ],
+    "latency_ms": 105.16
+  },
+  "system_status_response": {
+    "python_version": "3.11.4 (main, Jun 5 2023, 11:31:11)",
+    "cuda_available": false,
+    "gpu_details": "N/A",
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "model_loaded": true,
+    "vector_index_path": "data/vectorstore",
+    "vector_index_exists": true,
+    "vector_index_metadata": {
+      "knowledge_hash": "d41d8cd98f00b204e9800998ecf8427e",
+      "indexing_time_s": 0.84,
+      "documents_processed": 5,
+      "chunks_created": 25
+    },
+    "knowledge_base_document_count": 5,
+    "embedding_model_name": "sentence-transformers/all-MiniLM-L6-v2",
+    "memory_rss_mb": 248.12,
+    "system_ready": true
+  }
+}

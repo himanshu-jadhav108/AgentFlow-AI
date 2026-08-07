@@ -1,27 +1,33 @@
 version: '3.8'
 
 services:
-  web:
-    build: .
-    container_name: agentflow-ai-web
+  agent-api:
+    build:
+      context: .
+      target: runner
+    container_name: agentflow_api_service
     ports:
       - "8000:8000"
     environment:
-      - APP_NAME=AgentFlow AI Support Agent
       - APP_ENV=production
-      - HOST=0.0.0.0
       - PORT=8000
-      - LOG_LEVEL=INFO
-      - LLM_PROVIDER=ollama
-      - LLM_MODEL_NAME=phi3
-      - LLM_API_URL=http://host.docker.internal:11434
-      - EMBEDDING_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2
-      - VECTOR_DB_PATH=data/vectorstore
-      - DOCUMENTS_DIR=data/documents
+      - HOST=0.0.0.0
+      - LLM_PROVIDER=huggingface
+      - LLM_MODEL_NAME=Qwen/Qwen2.5-0.5B-Instruct
+      - HF_HOME=/root/.cache/huggingface
     volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-    extra_hosts:
-      # Allows the Docker container to connect to host's Ollama service
-      - "host.docker.internal:host-gateway"
-    restart: always
+      # Persists HuggingFace downloads across container rebuilds
+      - huggingface_cache:/root/.cache/huggingface
+      # Persists vector database FAISS indexes across builds
+      - vector_data:/app/data/vectorstore
+      # Persists log dumps
+      - logs_data:/app/logs
+    restart: unless-stopped
+
+volumes:
+  huggingface_cache:
+    driver: local
+  vector_data:
+    driver: local
+  logs_data:
+    driver: local

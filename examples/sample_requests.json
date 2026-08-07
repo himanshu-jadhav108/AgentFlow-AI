@@ -1,0 +1,13 @@
+{
+  "ask_request": {
+    "question": "How do read-only users setup API keys?"
+  },
+  "search_request": {
+    "query": "reset my password",
+    "top_k": 3,
+    "min_similarity": 0.4
+  },
+  "graph_run_request": {
+    "question": "Can read-only users create API keys?"
+  }
+}
