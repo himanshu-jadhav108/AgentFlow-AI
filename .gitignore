@@ -1,6 +1,8 @@
 # Environment variables (contains credentials and local API URLs)
 .env
 
+# Educational documentation folder
+docs/
 
 # Application runtime logs
 logs/

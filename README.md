@@ -14,7 +14,7 @@
 ---
 
 ## Navigation
-[Documentation](#21-documentation) • [API Reference](#13-api-reference) • [Quick Start](#11-installation) • [System Architecture](#4-system-architecture)
+[API Reference](#13-api-reference) • [Quick Start](#11-installation) • [System Architecture](#4-system-architecture)
 
 ---
 
@@ -30,15 +30,15 @@ AgentFlow AI implements an opinionated engineering philosophy:
 
 ```mermaid
 graph TD;
-    classDef startClass fill:#3498db,stroke:#2980b9,stroke-width:2px,color:#fff;
-    classDef processClass fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:#fff;
-    classDef endClass fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff;
+    classDef styleStart fill:#1E66F5,stroke:#89B4FA,stroke-width:2px,color:#FFFFFF;
+    classDef styleProcess fill:#40A02B,stroke:#A6E3A1,stroke-width:2px,color:#FFFFFF;
+    classDef styleEnd fill:#8839EF,stroke:#CBA6F7,stroke-width:2px,color:#FFFFFF;
 
-    Q[User Question]:::startClass --> R[Retrieve Documents]:::processClass;
-    R --> G[Generate Response]:::processClass;
-    G --> V[Verify Grounding]:::processClass;
-    V --> E[Expose Explanation]:::processClass;
-    E --> Ans[Final Response]:::endClass;
+    Q[User Question]:::styleStart --> R[Retrieve Documents]:::styleProcess;
+    R --> G[Generate Response]:::styleProcess;
+    G --> V[Verify Grounding]:::styleProcess;
+    V --> E[Expose Explanation]:::styleProcess;
+    E --> Ans[Final Response]:::styleEnd;
 ```
 
 ---
@@ -59,10 +59,11 @@ graph TD;
 
 ```mermaid
 graph TB;
-    classDef styleClient fill:#3498db,stroke:#2980b9,color:#fff;
-    classDef styleApp fill:#2ecc71,stroke:#27ae60,color:#fff;
-    classDef styleGraph fill:#f39c12,stroke:#d35400,color:#fff;
-    classDef styleVerify fill:#e74c3c,stroke:#c0392b,color:#fff;
+    classDef styleClient fill:#1E66F5,stroke:#89B4FA,stroke-width:2px,color:#FFFFFF;
+    classDef styleApp fill:#40A02B,stroke:#A6E3A1,stroke-width:2px,color:#FFFFFF;
+    classDef styleGraph fill:#DF8E1D,stroke:#F9E2AF,stroke-width:2px,color:#FFFFFF;
+    classDef styleVerify fill:#D20F39,stroke:#F38BA8,stroke-width:2px,color:#FFFFFF;
+    classDef styleRegistry fill:#8839EF,stroke:#CBA6F7,stroke-width:2px,color:#FFFFFF;
 
     subgraph Client Layer
         U[Client Browser]:::styleClient;
@@ -84,8 +85,8 @@ graph TB;
     end
 
     subgraph Local Context & DI Registry
-        Registry[ComponentRegistry] --> FAISS[FAISS Vector Store];
-        Registry --> LLM[Local Qwen LLM];
+        Registry[ComponentRegistry]:::styleRegistry --> FAISS[FAISS Vector Store]:::styleRegistry;
+        Registry --> LLM[Local Qwen LLM]:::styleRegistry;
         Registry --> Verifier[Hybrid Verifier]:::styleVerify;
     end
 
@@ -242,12 +243,14 @@ Retrieval-Augmented Generation alone does not guarantee accuracy, as LLMs can st
 
 ```mermaid
 graph TD;
-    classDef stylePass fill:#2ecc71,stroke:#27ae60,color:#fff;
-    classDef styleFail fill:#e74c3c,stroke:#c0392b,color:#fff;
+    classDef styleGen fill:#1E66F5,stroke:#89B4FA,stroke-width:2px,color:#FFFFFF;
+    classDef styleRule fill:#DF8E1D,stroke:#F9E2AF,stroke-width:2px,color:#FFFFFF;
+    classDef stylePass fill:#40A02B,stroke:#A6E3A1,stroke-width:2px,color:#FFFFFF;
+    classDef styleFail fill:#D20F39,stroke:#F38BA8,stroke-width:2px,color:#FFFFFF;
 
-    Gen[Generated Response] --> Rule[Rule-Based Validation];
+    Gen[Generated Response]:::styleGen --> Rule[Rule-Based Validation]:::styleRule;
     Rule -->|Fail| Retry[Loop Retry / Self-Correction]:::styleFail;
-    Rule -->|Pass| Sem[Semantic Verification];
+    Rule -->|Pass| Sem[Semantic Verification]:::styleRule;
     Sem -->|Pass| Pass[Return Response]:::stylePass;
     Sem -->|Fail| Retry;
 ```
@@ -434,30 +437,13 @@ Latencies depend on your local hardware:
 
 ---
 
-## 21. Documentation
-
-| Document | Purpose |
-| :--- | :--- |
-| [System Design](docs/architecture/system_design.md) | High-level system overview. |
-| [Plugin Architecture](docs/architecture/plugin_architecture.md) | Interfaces and Component Registry details. |
-| [Execution Trace](docs/architecture/execution_trace.md) | State machine transition tracing. |
-| [Explainability Guide](docs/explainability.md) | Detailed report structure and confidence weights. |
-| [Debug Dashboard](docs/dashboard.md) | Diagnostic store and renderers. |
-| [Interview Prep Guide](docs/interview_guide.md) | 75 questions and answers for evaluations. |
-| [Technical Report](docs/technical_report.md) | Engineering design decisions and challenges. |
-| [Demo Tour Script](docs/demo_script.md) | Step-by-step 10-minute demo script. |
-| [API Execution Guide](docs/api_guide.md) | cURL and Python API request samples. |
-| [Manager Briefing Guide](docs/manager_briefing.md) | Technical defense and presentation strategy. |
-
----
-
-## 22. Demo
+## 21. Demo
 
 *A placeholder for a video demo or screenshot.*
 
 ---
 
-## 23. License
+## 22. License
 
 Distributed under the [MIT License](LICENSE).
 
