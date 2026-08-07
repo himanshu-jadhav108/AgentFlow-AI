@@ -6,11 +6,13 @@ from app.state.agent_state import AgentState
 from app.nodes.start import start_node
 from app.nodes.triage import triage_node
 from app.nodes.retrieve import retrieve_node
+from app.nodes.generate import generate_node
+from app.nodes.verify import verify_node
 from app.nodes.clarification import clarification_node
 from app.nodes.escalation import escalation_node
 from app.nodes.out_of_scope import out_of_scope_node
 from app.nodes.end import end_node
-from app.routing.conditions import route_after_triage, route_after_retrieve
+from app.routing.conditions import route_after_triage, route_after_retrieve, route_after_verify
 from core.logger import logger
 
 
@@ -29,6 +31,8 @@ def build_graph() -> Any:
     workflow.add_node("start", start_node)
     workflow.add_node("triage", triage_node)
     workflow.add_node("retrieve", retrieve_node)
+    workflow.add_node("generate", generate_node)
+    workflow.add_node("verify", verify_node)
     workflow.add_node("clarification", clarification_node)
     workflow.add_node("escalation", escalation_node)
     workflow.add_node("out_of_scope", out_of_scope_node)
@@ -50,11 +54,24 @@ def build_graph() -> Any:
         },
     )
 
-    # Conditional edge routing after Retrieve Node (for future verification / generation loops)
+    # Conditional edge routing after Retrieve Node pointing to generate node
     workflow.add_conditional_edges(
         "retrieve",
         route_after_retrieve,
         {
+            "generate": "generate",
+        },
+    )
+
+    # Linear transition from Generate to Verify
+    workflow.add_edge("generate", "verify")
+
+    # Conditional edge routing after Verify Node (loops back or terminates)
+    workflow.add_conditional_edges(
+        "verify",
+        route_after_verify,
+        {
+            "generate": "generate",
             "end": "end",
         },
     )

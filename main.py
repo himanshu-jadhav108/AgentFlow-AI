@@ -9,6 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from config.settings import settings
 from core.logger import setup_logging, logger
 from app.schemas.retrieval import SearchRequest, SearchResponse, IndexResponse, GraphRunRequest, GraphRunResponse
+from app.schemas.answer import AskRequest, AskResponse
 from app.services.indexing_service import IndexingService
 from app.retrieval.retriever import SemanticRetriever
 from models.responses import HealthResponse, VersionResponse, ErrorResponse
@@ -178,6 +179,65 @@ async def run_agent_graph(request: GraphRunRequest) -> GraphRunResponse:
         )
     except Exception as e:
         logger.exception(f"Unexpected error executing graph workflow: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ask", response_model=AskResponse)
+async def ask_agent(request: AskRequest) -> AskResponse:
+    """Trigger the end-to-end support agent RAG pipeline, generating a verified answer."""
+    logger.info(f"API request received: Ask query '{request.question}'")
+    try:
+        # Initialize default workflow state
+        initial_state = {
+            "question": request.question,
+            "classification": "clarification",
+            "conversation_history": [],
+            "retrieved_documents": [],
+            "selected_chunks": [],
+            "answer": None,
+            "confidence": 0.0,
+            "sources": [],
+            "requires_human": False,
+            "retry_count": 0,
+            "max_retries": 3,
+            "verification_status": "unverified",
+            "metadata": {},
+            "execution_log": [],
+            "timestamps": {},
+        }
+
+        # Run compiled LangGraph workflow
+        final_state = await agent_graph.ainvoke(initial_state)
+
+        # Retrieve validation and classification outputs
+        classification = final_state.get("classification", "unknown")
+        answer = final_state.get("answer", "")
+        confidence = final_state.get("confidence", 0.0)
+        sources = final_state.get("sources", [])
+        requires_human = final_state.get("requires_human", False)
+
+        # Extract triage or verification reasoning
+        meta = final_state.get("metadata", {})
+        reason = meta.get("verification_reason", meta.get("triage_reason", "Processed successfully."))
+
+        # If answer is empty string, output fallback
+        if not answer:
+            answer = "I couldn't find supporting information."
+
+        return AskResponse(
+            classification=classification,
+            answer=answer,
+            confidence=confidence,
+            sources=sources,
+            requires_human=requires_human,
+            reason=reason,
+            metadata={
+                "generation_latency_ms": meta.get("generation_latency_ms", 0.0),
+                "latency_ms": final_state.get("timestamps", {}).get("latency_ms", "0.0")
+            }
+        )
+    except Exception as e:
+        logger.exception(f"Unexpected error in /ask pipeline: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
