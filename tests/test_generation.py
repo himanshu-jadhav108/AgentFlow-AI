@@ -56,23 +56,22 @@ def test_confidence_scoring() -> None:
     # Agreement = 1.0 (0.3 weight)
     # Verification = 1.0 (0.2 weight)
     # Expected confidence = 0.925
-    conf = calculate_confidence(retrieved, ["faq.md", "guide.md"], True, "Here is the answer.")
-    assert abs(conf - 0.925) < 0.001
+    # Note: calculate_confidence now uses default weights: 0.4, 0.3, 0.2, 0.1
+    # 0.4 * 0.85 + 0.3 * 1.0 + 0.2 * 1.0 + 0.1 * 1.0 = 0.34 + 0.3 + 0.2 + 0.1 = 0.94
+    conf = calculate_confidence(retrieved, ["faq.md", "guide.md"], True, True, "Here is the answer.")
+    assert abs(conf - 0.94) < 0.001
 
     # 2. Refusal message confidence
-    # Expected confidence = (0.85 * 0.5) + (1.0 * 0.3) + (1.0 * 0.2) = 0.925
+    # Expected confidence = (0.85 * 0.4) + (0.3 * 1.0) + (0.2 * 1.0) + (0.1 * 1.0) = 0.94
     refusal_conf = calculate_confidence(
-        retrieved, [], True, "I couldn't find supporting information."
+        retrieved, [], True, True, "I couldn't find supporting information."
     )
-    assert abs(refusal_conf - 0.925) < 0.001
+    assert abs(refusal_conf - 0.94) < 0.001
 
     # 3. Unverified response citation mismatch
-    # Retrieval Sim = 0.85 (0.425 weight)
-    # Agreement = 0.5 (0.15 weight)
-    # Verification = 0.0 (0.0 weight)
-    # Expected confidence = 0.575
-    bad_conf = calculate_confidence(retrieved, ["faq.md", "bad.md"], False, "Ungrounded answer.")
-    assert abs(bad_conf - 0.575) < 0.001
+    # Expected confidence = (0.85 * 0.4) + (0.3 * 0.0) + (0.2 * 0.5) + (0.1 * 1.0) = 0.34 + 0.0 + 0.10 + 0.10 = 0.54
+    bad_conf = calculate_confidence(retrieved, ["faq.md", "bad.md"], True, False, "Ungrounded answer.")
+    assert abs(bad_conf - 0.54) < 0.001
 
 
 def test_verifier_grounding() -> None:

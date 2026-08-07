@@ -54,6 +54,14 @@ class Settings(BaseSettings):
         description="Directory containing source text documents to index.",
     )
 
+    # Hybrid Verification Options
+    ENABLE_RULE_VERIFICATION: bool = Field(default=True, description="Enable rule-based deterministic validation checks.")
+    ENABLE_SEMANTIC_VERIFICATION: bool = Field(default=True, description="Enable LLM semantic validation check.")
+    RULE_VALIDATION_ENABLED: bool = Field(default=True, description="Alias toggle for rule validation checks.")
+    SEMANTIC_VALIDATION_ENABLED: bool = Field(default=True, description="Alias toggle for semantic validation checks.")
+    MIN_CONFIDENCE: float = Field(default=0.5, description="Minimum confidence threshold required to pass validation.")
+    MAX_RETRIES: int = Field(default=3, description="Maximum execution retries allowed for verification loop.")
+
 
 # Instantiate settings for global project import
 settings = Settings()

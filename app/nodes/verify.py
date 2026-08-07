@@ -1,7 +1,8 @@
-"""VERIFY node evaluating answer correctness and computing confidence."""
+"""VERIFY node evaluating answer correctness using a hybrid pipeline."""
 
+import time
 from app.state.agent_state import AgentState
-from app.verification.verifier import verify_answer
+from app.verification.hybrid_verifier import HybridVerifier
 from app.verification.confidence import calculate_confidence
 from app.verification.retry import get_retry_feedback
 from core.logger import logger
@@ -10,7 +11,8 @@ from core.logger import logger
 def verify_node(state: AgentState) -> dict:
     """Verifies that the generated answer matches factual document chunks.
 
-    Applies the weighted confidence score formula and increments retry counts.
+    Applies deterministic rule validation followed by semantic model verification.
+    Computes a weighted grounding confidence score and handles loops.
 
     Args:
         state: Current AgentState.
@@ -30,17 +32,29 @@ def verify_node(state: AgentState) -> dict:
     answer_payload = {
         "answer": answer,
         "citations": sources,
+        "reason": state.get("metadata", {}).get("triage_reason", "Processed successfully."),
     }
 
-    # Execute dual-layer verification check
-    verif_data = verify_answer(answer_payload, selected_chunks)
-    supported = verif_data.get("supported", False)
-    reason = verif_data.get("reason", "Verification complete.")
+    # Execute Hybrid Verification Pipeline
+    verifier = HybridVerifier()
+    res = verifier.verify(
+        question=question,
+        answer_payload=answer_payload,
+        retrieved_chunks=selected_chunks,
+        retry_count=retry_count,
+    )
+
+    passed = res.get("passed", False)
+    reason = res.get("reason", "Verification complete.")
+    rule_passed = res.get("rule_passed", False)
+    semantic_passed = res.get("semantic_passed", False)
+    latency_ms = res.get("latency_ms", 0.0)
 
     meta = state.get("metadata", {}).copy() if state.get("metadata") else {}
     meta["verification_reason"] = reason
+    meta["verification_latency_ms"] = latency_ms
 
-    if supported:
+    if passed:
         verification_status = "verified"
         log_msg = f"Verify node: Answer verified successfully. Reason: {reason}"
     else:
@@ -52,22 +66,21 @@ def verify_node(state: AgentState) -> dict:
         meta["retry_feedback"] = feedback
         log_msg = f"Verify node: Verification failed (Cycle #{retry_count}). Reason: {reason}"
 
-    # Compute deterministic confidence score
+    # Compute deterministic weighted confidence score
     confidence = calculate_confidence(
         retrieved_chunks=selected_chunks,
         citations=sources,
-        is_verified=supported,
+        rule_passed=rule_passed,
+        semantic_passed=bool(semantic_passed),
         answer=answer,
     )
 
     # Check for fail-safe trigger (stop retrying and output a clean refusal)
     max_retries = state.get("max_retries", 3)
-    if not supported and retry_count >= max_retries:
+    if not passed and retry_count >= max_retries:
         logger.error(f"Verify node: Maximum retry limit ({max_retries}) reached. Activating fail-safe.")
         log_msg += " | Max retries reached. Triggering fail-safe."
-        # Update answer to the fail-safe refusal string
         answer = "I could not verify the answer using available documentation."
-        # Update verification status to verified to exit the loop
         verification_status = "verified"
 
     return {
