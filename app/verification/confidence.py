@@ -1,6 +1,7 @@
 """Confidence score calculator using weighted, configurable grounding metrics."""
 
 from typing import Any, List
+
 from core.logger import logger
 
 
@@ -60,7 +61,10 @@ def calculate_confidence(
     # 1. Retrieval Similarity (W_ret)
     retrieval_similarity = 0.0
     if retrieved_chunks:
-        scores = [getattr(c, "confidence_score", getattr(c, "score", 0.0)) for c in retrieved_chunks]
+        scores = [
+            getattr(c, "confidence_score", getattr(c, "score", 0.0))
+            for c in retrieved_chunks
+        ]
         retrieval_similarity = sum(scores) / len(scores)
 
     # 2. Semantic Verification (W_sem)
@@ -68,7 +72,9 @@ def calculate_confidence(
 
     # 3. Source Coverage (W_cov)
     coverage_score = 0.0
-    retrieved_sources = set(getattr(c, "source", "") for c in retrieved_chunks if getattr(c, "source", ""))
+    retrieved_sources = set(
+        getattr(c, "source", "") for c in retrieved_chunks if getattr(c, "source", "")
+    )
 
     refusal_phrase = "couldn't find supporting information"
     is_refusal = refusal_phrase in answer.lower()
@@ -78,7 +84,11 @@ def calculate_confidence(
     elif not citations:
         coverage_score = 0.0
     else:
-        matching = sum(1 for cite in citations if any(cite.lower() in src.lower() for src in retrieved_sources))
+        matching = sum(
+            1
+            for cite in citations
+            if any(cite.lower() in src.lower() for src in retrieved_sources)
+        )
         coverage_score = matching / len(citations)
 
     # 4. Rule Validation (W_rule)

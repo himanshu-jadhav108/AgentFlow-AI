@@ -5,6 +5,7 @@ import json
 import os
 import time
 from typing import Any, Dict
+
 from app.services.indexing_service import IndexingService
 from config.settings import settings
 from core.logger import logger
@@ -70,7 +71,9 @@ class IndexManager:
     def ensure_index_ready(cls) -> None:
         """Verifies FAISS files on startup and runs auto-rebuild if outdated."""
         if cls.index_needs_rebuild():
-            logger.info("IndexManager: FAISS index missing or outdated. Triggering auto-rebuild...")
+            logger.info(
+                "IndexManager: FAISS index missing or outdated. Triggering auto-rebuild..."
+            )
             cls.rebuild_index()
         else:
             logger.info("IndexManager: FAISS index is up-to-date. Ready.")
@@ -102,7 +105,9 @@ class IndexManager:
             with open(meta_file, "w", encoding="utf-8") as f:
                 json.dump(meta, f, indent=4)
 
-            logger.info(f"IndexManager: FAISS index rebuilt successfully in {duration:.2f}s.")
+            logger.info(
+                f"IndexManager: FAISS index rebuilt successfully in {duration:.2f}s."
+            )
         else:
             logger.error(f"IndexManager: Index rebuild failed: {res.message}")
 

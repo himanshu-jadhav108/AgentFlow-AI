@@ -1,10 +1,11 @@
 """Answer generation manager coordinating prompts, local model runs, and parsing."""
 
 from typing import Any, Dict, List
-from app.llm.inference import InferenceManager
-from app.prompts.system_prompt import SYSTEM_PROMPT
-from app.prompts.generation_prompt import GENERATION_PROMPT_TEMPLATE
+
 from app.generation.formatter import parse_json_response
+from app.llm.inference import InferenceManager
+from app.prompts.generation_prompt import GENERATION_PROMPT_TEMPLATE
+from app.prompts.system_prompt import SYSTEM_PROMPT
 from core.logger import logger
 
 
@@ -38,9 +39,15 @@ class AnswerGenerator:
             source_name = getattr(chunk, "source", "Unknown Source")
             chunk_id = getattr(chunk, "chunk_id", "Unknown ID")
             text = getattr(chunk, "text", "")
-            context_parts.append(f"Document Name: {source_name} (Chunk ID: {chunk_id})\nPassage: {text}")
+            context_parts.append(
+                f"Document Name: {source_name} (Chunk ID: {chunk_id})\nPassage: {text}"
+            )
 
-        context_str = "\n\n".join(context_parts) if context_parts else "No relevant documents retrieved."
+        context_str = (
+            "\n\n".join(context_parts)
+            if context_parts
+            else "No relevant documents retrieved."
+        )
 
         # 2. Format conversation history
         history_parts = []
@@ -49,7 +56,11 @@ class AnswerGenerator:
             content = msg.get("content", "")
             history_parts.append(f"{role}: {content}")
 
-        history_str = "\n".join(history_parts) if history_parts else "No previous conversation history."
+        history_str = (
+            "\n".join(history_parts)
+            if history_parts
+            else "No previous conversation history."
+        )
 
         # 3. Format Generation Prompt template
         user_prompt = GENERATION_PROMPT_TEMPLATE.format(

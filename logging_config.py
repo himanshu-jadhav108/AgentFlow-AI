@@ -2,7 +2,9 @@
 
 import logging
 import sys
+
 from rich.logging import RichHandler
+
 from config.settings import settings
 
 
@@ -11,7 +13,9 @@ def setup_rich_logging() -> None:
     log_level = settings.LOG_LEVEL.upper()
 
     # Define message formats
-    file_format = "%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d - %(message)s"
+    file_format = (
+        "%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d - %(message)s"
+    )
 
     # Configure root logger
     root_logger = logging.getLogger()
@@ -33,6 +37,7 @@ def setup_rich_logging() -> None:
 
     # 2. File Handler
     import os
+
     os.makedirs("logs", exist_ok=True)
     file_handler = logging.FileHandler("logs/agentflow.log", encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)

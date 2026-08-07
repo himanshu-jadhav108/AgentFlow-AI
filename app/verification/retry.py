@@ -23,10 +23,10 @@ def get_retry_feedback(
     feedback = (
         f"CRITICAL FEEDBACK FOR CORRECTION:\n"
         f"Your previous answer attempt was flagged as invalid or ungrounded.\n"
-        f"Failed Answer Attempt:\n\"{previous_answer}\"\n\n"
-        f"Reason for Failure:\n\"{verification_reason}\"\n\n"
+        f'Failed Answer Attempt:\n"{previous_answer}"\n\n'
+        f'Reason for Failure:\n"{verification_reason}"\n\n'
         f"Task:\n"
-        f"Please rewrite your answer to the user question: \"{question}\".\n"
+        f'Please rewrite your answer to the user question: "{question}".\n'
         f"Follow these rules strictly:\n"
         f"1. Remove all ungrounded assumptions, figures, or claims not explicitly found in the context documents.\n"
         f"2. Only list citations for documents actually present in the context. Do not invent document names.\n"

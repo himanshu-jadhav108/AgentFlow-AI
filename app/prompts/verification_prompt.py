@@ -11,7 +11,7 @@ VERIFICATION_PROMPT_TEMPLATE = (
     "assumptions, or hallucinated facts.\n\n"
     "Your output MUST be a valid JSON object with the following structure:\n"
     "{{\n"
-    "  \"supported\": true or false,\n"
-    "  \"reason\": \"Detailed analysis explaining why it is supported or unsupported\"\n"
+    '  "supported": true or false,\n'
+    '  "reason": "Detailed analysis explaining why it is supported or unsupported"\n'
     "}}\n"
 )

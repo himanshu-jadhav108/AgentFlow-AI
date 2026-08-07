@@ -1,9 +1,10 @@
 """Verification engine validating answer grounding and citations."""
 
 from typing import Any, Dict, List
+
+from app.generation.formatter import parse_json_response
 from app.llm.inference import InferenceManager
 from app.prompts.verification_prompt import VERIFICATION_PROMPT_TEMPLATE
-from app.generation.formatter import parse_json_response
 from core.logger import logger
 
 
@@ -32,7 +33,10 @@ def verify_answer(
 
     # 1. Empty check
     if not answer:
-        return {"supported": False, "reason": "Generated answer text is completely empty."}
+        return {
+            "supported": False,
+            "reason": "Generated answer text is completely empty.",
+        }
 
     # 2. Refusal check
     refusal_phrase = "couldn't find supporting information"
@@ -52,11 +56,15 @@ def verify_answer(
         }
 
     # 4. Source Citation match check (must exist in retrieved sources)
-    retrieved_sources = set(getattr(c, "source", "") for c in retrieved_chunks if getattr(c, "source", ""))
+    retrieved_sources = set(
+        getattr(c, "source", "") for c in retrieved_chunks if getattr(c, "source", "")
+    )
     for cite in citations:
         # Check if the cited name matches or is a substring of retrieved sources
         if not any(cite.lower() in src.lower() for src in retrieved_sources):
-            logger.warning(f"Verifier: Cited document '{cite}' is not in retrieved sources: {retrieved_sources}")
+            logger.warning(
+                f"Verifier: Cited document '{cite}' is not in retrieved sources: {retrieved_sources}"
+            )
             return {
                 "supported": False,
                 "reason": f"Cited document '{cite}' was not retrieved in search context.",
@@ -79,17 +87,23 @@ def verify_answer(
     try:
         inference_manager = InferenceManager()
         # Enforce zero temperature for deterministic evaluation
-        raw_eval = inference_manager.generate_text(verification_prompt, max_new_tokens=256, temperature=0.0)
+        raw_eval = inference_manager.generate_text(
+            verification_prompt, max_new_tokens=256, temperature=0.0
+        )
         eval_data = parse_json_response(raw_eval)
 
         supported = eval_data.get("supported", False)
         reason = eval_data.get("reason", "Completed semantic evaluation.")
 
-        logger.info(f"Verifier: LLM grounding check complete. Supported={supported}. Reason: {reason}")
+        logger.info(
+            f"Verifier: LLM grounding check complete. Supported={supported}. Reason: {reason}"
+        )
         return {"supported": supported, "reason": reason}
 
     except Exception as e:
-        logger.warning(f"Verifier: LLM semantic validation failed ({e}). Falling back to citation-match pass.")
+        logger.warning(
+            f"Verifier: LLM semantic validation failed ({e}). Falling back to citation-match pass."
+        )
         return {
             "supported": True,
             "reason": "Fast rules and citation checks passed. LLM verification fallback triggered.",

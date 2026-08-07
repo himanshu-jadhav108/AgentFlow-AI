@@ -3,14 +3,15 @@
 import os
 import time
 from typing import Optional
+
+from app.loaders.json_loader import JSONCaseLoader
+from app.loaders.markdown_loader import MarkdownLoader
+from app.preprocessing.chunker import DocumentChunker
+from app.preprocessing.cleaner import TextCleaner
+from app.schemas.retrieval import IndexResponse
+from app.vectorstore.faiss_store import FAISSStoreManager
 from config.settings import settings
 from core.logger import logger
-from app.schemas.retrieval import IndexResponse
-from app.loaders.markdown_loader import MarkdownLoader
-from app.loaders.json_loader import JSONCaseLoader
-from app.preprocessing.cleaner import TextCleaner
-from app.preprocessing.chunker import DocumentChunker
-from app.vectorstore.faiss_store import FAISSStoreManager
 
 
 class IndexingService:
@@ -54,7 +55,9 @@ class IndexingService:
             case_docs = json_loader.load()
             loaded_docs.extend(case_docs)
         else:
-            logger.warning(f"Resolved cases JSON file not found at: {cases_file}. Skipping JSON loading.")
+            logger.warning(
+                f"Resolved cases JSON file not found at: {cases_file}. Skipping JSON loading."
+            )
 
         if not loaded_docs:
             msg = "No documents or cases found to index. Index was not updated."
@@ -95,7 +98,9 @@ class IndexingService:
 
         # 5. Build and persist FAISS index
         db_path = settings.VECTOR_DB_PATH
-        logger.info(f"Indexing {len(chunks)} chunks in FAISS and persisting to {db_path}...")
+        logger.info(
+            f"Indexing {len(chunks)} chunks in FAISS and persisting to {db_path}..."
+        )
         try:
             self.store_manager.rebuild_index(chunks, db_path)
         except Exception as e:

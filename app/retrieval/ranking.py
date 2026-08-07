@@ -1,7 +1,9 @@
 """Ranking logic for sorting and scoring retrieved document chunks."""
 
 from typing import Any, List, Tuple
+
 from langchain_core.documents import Document as LCDocument
+
 from app.schemas.retrieval import RetrievedChunk
 from core.logger import logger
 

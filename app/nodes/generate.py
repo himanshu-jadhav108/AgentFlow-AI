@@ -1,8 +1,9 @@
 """GENERATE node executing prompt compiles and LLM text generation."""
 
 import time
-from app.state.agent_state import AgentState
+
 from app.generation.answer_generator import AnswerGenerator
+from app.state.agent_state import AgentState
 from core.logger import logger
 
 
@@ -28,7 +29,9 @@ def generate_node(state: AgentState) -> dict:
     # Inject self-correction details if this execution is a retry cycle
     query_to_submit = question
     if retry_feedback:
-        logger.info("Generate node: Injecting self-correction feedback into prompt context.")
+        logger.info(
+            "Generate node: Injecting self-correction feedback into prompt context."
+        )
         query_to_submit = f"{question}\n\n[SYSTEM REVISION]:\n{retry_feedback}"
 
     start_time = time.time()
@@ -43,6 +46,7 @@ def generate_node(state: AgentState) -> dict:
 
         latency_ms = (time.time() - start_time) * 1000
         from monitoring.metrics import metrics
+
         metrics.record_generation(latency_ms)
         meta["generation_latency_ms"] = latency_ms
 
@@ -75,5 +79,7 @@ def generate_node(state: AgentState) -> dict:
             "answer": "",
             "sources": [],
             "metadata": meta,
-            "execution_log": [f"Generate node: Inference failed after {latency_ms:.2f}ms. Error: {e}"],
+            "execution_log": [
+                f"Generate node: Inference failed after {latency_ms:.2f}ms. Error: {e}"
+            ],
         }

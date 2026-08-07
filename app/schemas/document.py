@@ -1,6 +1,7 @@
 """Domain model representing a structured document in the system."""
 
 from typing import Any, Dict
+
 from pydantic import BaseModel, Field
 
 

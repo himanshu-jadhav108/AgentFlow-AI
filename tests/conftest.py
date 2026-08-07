@@ -6,6 +6,7 @@ Automatically mocks local HuggingFace LLM loaders to run tests without downloadi
 import os
 from typing import Any
 from unittest.mock import MagicMock
+
 import pytest
 import torch
 from fastapi.testclient import TestClient
@@ -16,11 +17,11 @@ os.environ["LOG_LEVEL"] = "DEBUG"
 os.environ["LLM_PROVIDER"] = "ollama"
 os.environ["LLM_MODEL_NAME"] = "test-model"
 
+from app.llm.model_loader import ModelLoader
+from app.llm.tokenizer import TokenizerLoader
 # Import settings and app after setting overrides
 from config.settings import settings
 from main import app
-from app.llm.model_loader import ModelLoader
-from app.llm.tokenizer import TokenizerLoader
 
 
 class MockModel:
@@ -53,7 +54,11 @@ class MockTokenizer:
     def decode(self, tokens: Any, *args, **kwargs) -> str:
         prompt = getattr(self, "last_prompt", "")
         # Return custom JSON structures depending on the prompt instructions
-        if "VERIFICATION_PROMPT_TEMPLATE" in prompt or "Verify" in prompt or "Factual Context Chunks" in prompt:
+        if (
+            "VERIFICATION_PROMPT_TEMPLATE" in prompt
+            or "Verify" in prompt
+            or "Factual Context Chunks" in prompt
+        ):
             # Check if answer contains a hallucination for retry tests
             if "hallucinated answer" in prompt.lower():
                 return '{"supported": false, "reason": "Contains hallucinated facts."}'
@@ -80,6 +85,7 @@ class MockTokenizer:
 @pytest.fixture(autouse=True, scope="session")
 def mock_llm_loaders() -> None:
     """Monkeypatch LLM loaders session-wide to return mock instances."""
+
     # Define patch overrides
     def mock_load_model(self) -> Any:
         if self._model is None:

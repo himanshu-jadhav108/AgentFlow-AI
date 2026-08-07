@@ -2,11 +2,12 @@
 
 import time
 from typing import List, Optional
-from config.settings import settings
-from core.logger import logger
+
+from app.retrieval.ranking import SearchResultRanker
 from app.schemas.retrieval import RetrievedChunk
 from app.vectorstore.faiss_store import FAISSStoreManager
-from app.retrieval.ranking import SearchResultRanker
+from config.settings import settings
+from core.logger import logger
 
 
 class SemanticRetriever:
@@ -53,20 +54,27 @@ class SemanticRetriever:
         k = top_k or 4
         min_sim = min_similarity if min_similarity is not None else 0.0
 
-        logger.info(f"Executing semantic search for query: '{query}' (top_k={k}, min_similarity={min_sim})")
+        logger.info(
+            f"Executing semantic search for query: '{query}' (top_k={k}, min_similarity={min_sim})"
+        )
 
         # Perform FAISS search (returns tuples of (LCDocument, cosine_distance))
         # Since we use distance_strategy="COSINE", the returned score is Cosine Distance (1 - CosineSimilarity)
         try:
-            results_with_scores = self.store_manager.db.similarity_search_with_score(query, k=k)
+            results_with_scores = self.store_manager.db.similarity_search_with_score(
+                query, k=k
+            )
         except Exception as e:
             logger.error(f"Error executing similarity search: {e}")
             return []
 
         latency_ms = (time.time() - start_time) * 1000
         from monitoring.metrics import metrics
+
         metrics.record_retriever(latency_ms)
-        logger.info(f"FAISS search completed in {latency_ms:.2f}ms. Found {len(results_with_scores)} candidates.")
+        logger.info(
+            f"FAISS search completed in {latency_ms:.2f}ms. Found {len(results_with_scores)} candidates."
+        )
 
         # Rank results and transform them into RetrievedChunk objects
         ranked_chunks = self.ranker.rank_results(

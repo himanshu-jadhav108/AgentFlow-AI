@@ -80,13 +80,17 @@ def triage_node(state: AgentState) -> dict:
 
     # Copy and update metadata dictionary
     meta = state.get("metadata", {}).copy() if state.get("metadata") else {}
-    meta.update({
-        "triage_reason": reason,
-        "priority": priority,
-    })
+    meta.update(
+        {
+            "triage_reason": reason,
+            "priority": priority,
+        }
+    )
 
     return {
         "classification": classification,
         "metadata": meta,
-        "execution_log": [f"Triage node: Classified query as '{classification}'. Reason: {reason}"],
+        "execution_log": [
+            f"Triage node: Classified query as '{classification}'. Reason: {reason}"
+        ],
     }

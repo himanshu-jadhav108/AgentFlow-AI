@@ -3,6 +3,7 @@
 import time
 from threading import Lock
 from typing import Any, Dict, Optional, Tuple
+
 from core.logger import logger
 
 
@@ -10,7 +11,9 @@ class MemoryCache:
     """Lightweight in-memory cache with TTL expiration."""
 
     def __init__(self) -> None:
-        self._cache: Dict[str, Tuple[Any, float]] = {}  # key -> (value, expire_timestamp)
+        self._cache: Dict[str, Tuple[Any, float]] = (
+            {}
+        )  # key -> (value, expire_timestamp)
         self._lock = Lock()
         self._hits = 0
         self._misses = 0

@@ -1,7 +1,9 @@
 """Request validators for query sanitization and traversal prevention."""
 
 import re
+
 from fastapi import HTTPException, status
+
 from core.logger import logger
 
 
@@ -52,7 +54,9 @@ class RequestValidator:
         ]
         for pattern in path_traversal_patterns:
             if re.search(pattern, cleaned, re.IGNORECASE):
-                logger.warning(f"Security Warning: Blocked path traversal attempt in query: '{cleaned}'")
+                logger.warning(
+                    f"Security Warning: Blocked path traversal attempt in query: '{cleaned}'"
+                )
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Dangerous file system or path traversal sequence detected.",

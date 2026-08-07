@@ -1,7 +1,9 @@
 """Document chunking service that splits documents into smaller segments."""
 
 from typing import List
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from app.schemas.document import Document
 from core.logger import logger
 
@@ -38,7 +40,7 @@ class DocumentChunker:
 
         for idx, text in enumerate(splits):
             chunk_id = f"{doc.id}_c{idx}"
-            
+
             # Simple token estimation: word count / 0.75
             word_count = len(text.split())
             token_estimate = int(word_count / 0.75) if word_count > 0 else 0
@@ -60,7 +62,9 @@ class DocumentChunker:
                 )
             )
 
-        logger.debug(f"Split document {doc.id} ({doc.metadata.get('filename', 'unknown')}) into {len(chunks)} chunks.")
+        logger.debug(
+            f"Split document {doc.id} ({doc.metadata.get('filename', 'unknown')}) into {len(chunks)} chunks."
+        )
         return chunks
 
     def chunk_documents(self, docs: List[Document]) -> List[Document]:
@@ -75,5 +79,7 @@ class DocumentChunker:
         all_chunks: List[Document] = []
         for doc in docs:
             all_chunks.extend(self.chunk_document(doc))
-        logger.info(f"Chunked {len(docs)} documents into {len(all_chunks)} total chunks.")
+        logger.info(
+            f"Chunked {len(docs)} documents into {len(all_chunks)} total chunks."
+        )
         return all_chunks

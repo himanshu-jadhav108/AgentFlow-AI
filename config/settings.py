@@ -3,7 +3,8 @@
 Provides loaded, validated environment variables with type safety.
 """
 
-from typing import Literal, Any
+from typing import Any, Literal
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -18,11 +19,20 @@ class Settings(BaseSettings):
     )
 
     # General Settings
-    APP_NAME: str = Field(default="AgentFlow AI Support Agent", description="The name of the application.")
-    APP_ENV: str = Field(default="development", description="The run environment (e.g., development, production).")
-    HOST: str = Field(default="0.0.0.0", description="IP address to bind the API server to.")
+    APP_NAME: str = Field(
+        default="AgentFlow AI Support Agent", description="The name of the application."
+    )
+    APP_ENV: str = Field(
+        default="development",
+        description="The run environment (e.g., development, production).",
+    )
+    HOST: str = Field(
+        default="0.0.0.0", description="IP address to bind the API server to."
+    )
     PORT: int = Field(default=8000, description="Port to bind the API server to.")
-    LOG_LEVEL: str = Field(default="INFO", description="Log level for application logging.")
+    LOG_LEVEL: str = Field(
+        default="INFO", description="Log level for application logging."
+    )
 
     # Model Settings
     LLM_PROVIDER: Literal["ollama", "huggingface", "llama-cpp"] = Field(
@@ -55,25 +65,50 @@ class Settings(BaseSettings):
     )
 
     # Hybrid Verification Options
-    ENABLE_RULE_VERIFICATION: bool = Field(default=True, description="Enable rule-based deterministic validation checks.")
-    ENABLE_SEMANTIC_VERIFICATION: bool = Field(default=True, description="Enable LLM semantic validation check.")
-    RULE_VALIDATION_ENABLED: bool = Field(default=True, description="Alias toggle for rule validation checks.")
-    SEMANTIC_VALIDATION_ENABLED: bool = Field(default=True, description="Alias toggle for semantic validation checks.")
-    MIN_CONFIDENCE: float = Field(default=0.5, description="Minimum confidence threshold required to pass validation.")
-    MAX_RETRIES: int = Field(default=3, description="Maximum execution retries allowed for verification loop.")
+    ENABLE_RULE_VERIFICATION: bool = Field(
+        default=True, description="Enable rule-based deterministic validation checks."
+    )
+    ENABLE_SEMANTIC_VERIFICATION: bool = Field(
+        default=True, description="Enable LLM semantic validation check."
+    )
+    RULE_VALIDATION_ENABLED: bool = Field(
+        default=True, description="Alias toggle for rule validation checks."
+    )
+    SEMANTIC_VALIDATION_ENABLED: bool = Field(
+        default=True, description="Alias toggle for semantic validation checks."
+    )
+    MIN_CONFIDENCE: float = Field(
+        default=0.5,
+        description="Minimum confidence threshold required to pass validation.",
+    )
+    MAX_RETRIES: int = Field(
+        default=3,
+        description="Maximum execution retries allowed for verification loop.",
+    )
 
     # Caching Options
-    ENABLE_CACHE: bool = Field(default=True, description="Enable in-memory query answer caching.")
-    CACHE_TTL_SECONDS: int = Field(default=300, description="Time-to-Live in seconds for cached queries.")
+    ENABLE_CACHE: bool = Field(
+        default=True, description="Enable in-memory query answer caching."
+    )
+    CACHE_TTL_SECONDS: int = Field(
+        default=300, description="Time-to-Live in seconds for cached queries."
+    )
 
     # Rate Limiting & Security Options
-    RATE_LIMIT_REQUESTS: int = Field(default=100, description="Max requests permitted in the sliding window.")
-    RATE_LIMIT_WINDOW_SECONDS: int = Field(default=60, description="Sliding window duration in seconds.")
-    MAX_PAYLOAD_SIZE_BYTES: int = Field(default=1024 * 1024, description="Maximum payload size in bytes (default 1MB).")
+    RATE_LIMIT_REQUESTS: int = Field(
+        default=100, description="Max requests permitted in the sliding window."
+    )
+    RATE_LIMIT_WINDOW_SECONDS: int = Field(
+        default=60, description="Sliding window duration in seconds."
+    )
+    MAX_PAYLOAD_SIZE_BYTES: int = Field(
+        default=1024 * 1024, description="Maximum payload size in bytes (default 1MB)."
+    )
 
     def __init__(self, **values: Any) -> None:
-        import os
         import importlib
+        import os
+
         env = values.get("APP_ENV", os.getenv("APP_ENV", "development")).lower()
         overrides = {}
         try:

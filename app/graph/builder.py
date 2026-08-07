@@ -1,18 +1,21 @@
 """LangGraph workflow builder for local support agent orchestration."""
 
 from typing import Any
+
 from langgraph.graph import END, START, StateGraph
-from app.state.agent_state import AgentState
+
+from app.nodes.clarification import clarification_node
+from app.nodes.end import end_node
+from app.nodes.escalation import escalation_node
+from app.nodes.generate import generate_node
+from app.nodes.out_of_scope import out_of_scope_node
+from app.nodes.retrieve import retrieve_node
 from app.nodes.start import start_node
 from app.nodes.triage import triage_node
-from app.nodes.retrieve import retrieve_node
-from app.nodes.generate import generate_node
 from app.nodes.verify import verify_node
-from app.nodes.clarification import clarification_node
-from app.nodes.escalation import escalation_node
-from app.nodes.out_of_scope import out_of_scope_node
-from app.nodes.end import end_node
-from app.routing.conditions import route_after_triage, route_after_retrieve, route_after_verify
+from app.routing.conditions import (route_after_retrieve, route_after_triage,
+                                    route_after_verify)
+from app.state.agent_state import AgentState
 from core.logger import logger
 
 

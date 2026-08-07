@@ -1,6 +1,7 @@
 """AgentState schema definition for LangGraph orchestration."""
 
 from typing import Annotated, Any, Dict, List, Optional
+
 from typing_extensions import TypedDict
 
 

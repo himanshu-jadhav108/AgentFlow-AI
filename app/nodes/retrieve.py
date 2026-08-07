@@ -1,7 +1,7 @@
 """Retrieve node implementation integrating Phase 2 document search."""
 
-from app.state.agent_state import AgentState
 from app.retrieval.retriever import SemanticRetriever
+from app.state.agent_state import AgentState
 from core.logger import logger
 
 
@@ -35,7 +35,9 @@ def retrieve_node(state: AgentState) -> dict:
     # Compute confidence: use the similarity score of the top ranked chunk, fallback to 0.0
     confidence = results[0].score if results else 0.0
 
-    logger.info(f"Retrieve node completed. Found {len(results)} matching chunks. Top confidence: {confidence:.4f}")
+    logger.info(
+        f"Retrieve node completed. Found {len(results)} matching chunks. Top confidence: {confidence:.4f}"
+    )
 
     return {
         "selected_chunks": results,

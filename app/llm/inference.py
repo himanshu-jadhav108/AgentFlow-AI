@@ -1,7 +1,9 @@
 """Inference engine managing tokenization, execution, and string decoding."""
 
 import time
+
 import torch
+
 from app.llm.model_loader import ModelLoader
 from app.llm.tokenizer import TokenizerLoader
 from core.logger import logger
@@ -14,7 +16,9 @@ class InferenceManager:
         self.model_loader = ModelLoader()
         self.tokenizer_loader = TokenizerLoader()
 
-    def generate_text(self, prompt: str, max_new_tokens: int = 512, temperature: float = 0.1) -> str:
+    def generate_text(
+        self, prompt: str, max_new_tokens: int = 512, temperature: float = 0.1
+    ) -> str:
         """Executes text generation on the local cached model.
 
         Args:
@@ -32,7 +36,9 @@ class InferenceManager:
         tokenizer = self.tokenizer_loader.load_tokenizer()
         device = self.model_loader.device
 
-        logger.info(f"Starting local LLM inference (tokens={max_new_tokens}, temp={temperature})...")
+        logger.info(
+            f"Starting local LLM inference (tokens={max_new_tokens}, temp={temperature})..."
+        )
 
         try:
             # Convert string to input IDs on selected device
@@ -54,7 +60,9 @@ class InferenceManager:
             generated_tokens = outputs[0][input_length:]
 
             # Decode tokens back into a readable string
-            decoded_text = tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
+            decoded_text = tokenizer.decode(
+                generated_tokens, skip_special_tokens=True
+            ).strip()
 
             latency_s = time.time() - start_time
             logger.info(f"Local LLM inference completed in {latency_s:.2f}s.")

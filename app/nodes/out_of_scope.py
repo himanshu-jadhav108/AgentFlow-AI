@@ -26,5 +26,7 @@ def out_of_scope_node(state: AgentState) -> dict:
     return {
         "answer": out_of_scope_msg,
         "confidence": 0.0,
-        "execution_log": [f"Out-of-Scope node: Off-topic query handled. Reason: {reason}"],
+        "execution_log": [
+            f"Out-of-Scope node: Off-topic query handled. Reason: {reason}"
+        ],
     }

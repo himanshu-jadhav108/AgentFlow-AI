@@ -9,13 +9,13 @@ GENERATION_PROMPT_TEMPLATE = (
     "Instructions:\n"
     "Answer the user's question using ONLY the facts explicitly stated in the context documents above. "
     "If the context documents do not contain enough information to answer, set the 'answer' field to "
-    "\"I couldn't find supporting information.\".\n\n"
+    '"I couldn\'t find supporting information.".\n\n'
     "Your output MUST be a valid JSON object. Do not include markdown wraps like ```json or any "
     "introductions or conclusions. Output ONLY the JSON block.\n\n"
     "JSON Schema:\n"
     "{{\n"
-    "  \"answer\": \"Detailed answer string with citations from documents\",\n"
-    "  \"citations\": [\"List of source document names used in the answer\"],\n"
-    "  \"reason\": \"Reasoning justifying how the context supports the answer\"\n"
+    '  "answer": "Detailed answer string with citations from documents",\n'
+    '  "citations": ["List of source document names used in the answer"],\n'
+    '  "reason": "Reasoning justifying how the context supports the answer"\n'
     "}}\n"
 )

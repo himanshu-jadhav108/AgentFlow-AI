@@ -1,7 +1,9 @@
 """TokenizerLoader class implementing singleton pattern for local tokenizations."""
 
 from typing import Any
+
 from transformers import AutoTokenizer
+
 from config.settings import settings
 from core.logger import logger
 

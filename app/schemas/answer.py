@@ -1,6 +1,7 @@
 """Pydantic schemas for the customer support ask query."""
 
 from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 

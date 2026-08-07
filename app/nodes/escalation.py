@@ -30,11 +30,13 @@ def escalation_node(state: AgentState) -> dict:
     logger.warning(f"Case escalated. Priority: {priority} | Reason: {reason}")
 
     # Update metadata to track escalation state
-    meta.update({
-        "escalation_priority": priority,
-        "escalation_reason": reason,
-        "escalated": True,
-    })
+    meta.update(
+        {
+            "escalation_priority": priority,
+            "escalation_reason": reason,
+            "escalated": True,
+        }
+    )
 
     return {
         "requires_human": True,

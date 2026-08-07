@@ -2,6 +2,7 @@
 
 import pytest
 from fastapi import status
+
 from app.graph.builder import build_graph
 from app.state.agent_state import AgentState
 
@@ -48,7 +49,10 @@ async def test_triage_answerable_path() -> None:
     assert final_state["classification"] == "answerable"
     assert len(final_state["selected_chunks"]) > 0  # Should retrieve mock docs
     assert final_state["confidence"] > 0.0
-    assert "faq.md" in final_state["sources"][0] or "resolved_cases.json" in final_state["sources"][0]
+    assert (
+        "faq.md" in final_state["sources"][0]
+        or "resolved_cases.json" in final_state["sources"][0]
+    )
     assert final_state["requires_human"] is False
 
     # Check execution trace logs
@@ -176,4 +180,7 @@ def test_api_graph_run(client) -> None:
     final_state = data["final_state"]
     assert final_state["confidence"] > 0.0
     assert len(final_state["selected_chunks"]) > 0
-    assert "faq.md" in final_state["sources"][0] or "resolved_cases.json" in final_state["sources"][0]
+    assert (
+        "faq.md" in final_state["sources"][0]
+        or "resolved_cases.json" in final_state["sources"][0]
+    )

@@ -25,7 +25,9 @@ def route_after_triage(state: AgentState) -> str:
     elif classification == "answerable":
         return "retrieve"
     else:
-        logger.warning(f"Unknown classification '{classification}'. Routing to clarification.")
+        logger.warning(
+            f"Unknown classification '{classification}'. Routing to clarification."
+        )
         return "clarification"
 
 
@@ -72,8 +74,12 @@ def route_after_verify(state: AgentState) -> str:
             logger.info("Factual verification failed. Retrying answer generation.")
             return "generate"
         else:
-            logger.warning("Factual verification failed and max retries reached. Routing to end.")
+            logger.warning(
+                "Factual verification failed and max retries reached. Routing to end."
+            )
             return "end"
     else:
-        logger.warning(f"Unknown verification status '{verification_status}'. Routing to end.")
+        logger.warning(
+            f"Unknown verification status '{verification_status}'. Routing to end."
+        )
         return "end"

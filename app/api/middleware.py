@@ -5,9 +5,11 @@ import uuid
 from collections import defaultdict
 from threading import Lock
 from typing import Callable, Dict, List
+
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+
 from config.settings import settings
 from core.logger import logger
 from monitoring.metrics import metrics
@@ -46,10 +48,14 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
 
         with self._lock:
             # Filter out expired request timestamps
-            self._requests[client_ip] = [t for t in self._requests[client_ip] if now - t < window]
+            self._requests[client_ip] = [
+                t for t in self._requests[client_ip] if now - t < window
+            ]
 
             if len(self._requests[client_ip]) >= limit:
-                logger.warning(f"Rate Limiter: Blocked IP '{client_ip}' (exceeded limit of {limit}/{window}s)")
+                logger.warning(
+                    f"Rate Limiter: Blocked IP '{client_ip}' (exceeded limit of {limit}/{window}s)"
+                )
                 return JSONResponse(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     content={
@@ -78,7 +84,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Content-Security-Policy"] = "default-src 'self'"
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
         return response
 
 
@@ -95,7 +103,9 @@ class TimingLoggingMiddleware(BaseHTTPMiddleware):
         content_length = request.headers.get("content-length")
         max_size = settings.MAX_PAYLOAD_SIZE_BYTES
         if content_length and int(content_length) > max_size:
-            logger.warning(f"Middleware: Blocked oversized payload ({content_length} bytes) on {path}")
+            logger.warning(
+                f"Middleware: Blocked oversized payload ({content_length} bytes) on {path}"
+            )
             return JSONResponse(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 content={
@@ -123,7 +133,9 @@ class TimingLoggingMiddleware(BaseHTTPMiddleware):
 
             # Record to system metrics (exclude metrics endpoint itself to prevent skewing averages)
             if "/metrics" not in path:
-                metrics.record_request(success=success and status_code < 400, duration_ms=latency_ms)
+                metrics.record_request(
+                    success=success and status_code < 400, duration_ms=latency_ms
+                )
 
             logger.info(
                 f"API Response [{request_id}]: {method} {path} finished with "

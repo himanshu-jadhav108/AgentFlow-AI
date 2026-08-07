@@ -3,7 +3,9 @@
 import json
 import os
 from typing import Any, Dict, List
+
 from pydantic import BaseModel, Field, ValidationError
+
 from app.schemas.document import Document
 from core.logger import logger
 
@@ -60,7 +62,9 @@ class JSONCaseLoader:
                     cases_list = raw_data[key]
                     break
             else:
-                logger.error("JSON dict root must contain a list of cases under 'cases', 'data', or 'results' keys.")
+                logger.error(
+                    "JSON dict root must contain a list of cases under 'cases', 'data', or 'results' keys."
+                )
                 return documents
         else:
             logger.error("JSON file root structure must be a list or object.")
@@ -74,7 +78,9 @@ class JSONCaseLoader:
                 doc = self._normalize_case(case_data)
                 documents.append(doc)
             except ValidationError as ve:
-                logger.warning(f"Validation failed for case at index {idx} in {self.file_path}: {ve.json()}")
+                logger.warning(
+                    f"Validation failed for case at index {idx} in {self.file_path}: {ve.json()}"
+                )
             except Exception as e:
                 logger.error(f"Error parsing case at index {idx}: {e}")
 
@@ -89,9 +95,7 @@ class JSONCaseLoader:
 
         # Build indexable content representing this case
         normalized_content = (
-            f"Category: {case.category}\n"
-            f"Question: {q}\n"
-            f"Answer: {a}"
+            f"Category: {case.category}\n" f"Question: {q}\n" f"Answer: {a}"
         )
 
         # Build metadata dictionary
@@ -102,11 +106,7 @@ class JSONCaseLoader:
             "source": self.file_path,
             "priority": case.priority,
             "type": "resolved_case",
-            **case.metadata
+            **case.metadata,
         }
 
-        return Document(
-            id=case.case_id,
-            content=normalized_content,
-            metadata=metadata
-        )
+        return Document(id=case.case_id, content=normalized_content, metadata=metadata)

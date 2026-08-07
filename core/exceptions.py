@@ -1,11 +1,13 @@
 """Global error handlers and custom exceptions for the FastAPI application."""
 
 from typing import Optional
+
 from fastapi import Request, status
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from models.responses import ErrorResponse
+from fastapi.responses import JSONResponse
+
 from core.logger import logger
+from models.responses import ErrorResponse
 
 
 class AppException(Exception):
@@ -25,7 +27,9 @@ class AppException(Exception):
 
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
     """Handles custom AppException and returns formatted JSON response."""
-    logger.error(f"AppException raised on {request.method} {request.url.path}: {exc.detail}")
+    logger.error(
+        f"AppException raised on {request.method} {request.url.path}: {exc.detail}"
+    )
     response_body = ErrorResponse(
         detail=exc.detail,
         status_code=exc.status_code,
@@ -42,14 +46,14 @@ async def validation_exception_handler(
 ) -> JSONResponse:
     """Handles pydantic validation exceptions, formatting them into standard ErrorResponse structures."""
     logger.warning(f"Request validation failed on {request.method} {request.url.path}")
-    
+
     # Standardize details
     error_list = []
     for err in exc.errors():
         loc_str = ".".join(str(x) for x in err.get("loc", []))
         msg = err.get("msg", "Unknown error")
         error_list.append(f"Field '{loc_str}' - {msg}")
-    
+
     joined_details = " | ".join(error_list)
     response_body = ErrorResponse(
         detail=f"Validation failed: {joined_details}",
@@ -65,7 +69,9 @@ async def validation_exception_handler(
 
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Global generic fallback exception handler for unhandled errors (HTTP 500)."""
-    logger.exception(f"Unhandled system exception raised on {request.method} {request.url.path}: {exc}")
+    logger.exception(
+        f"Unhandled system exception raised on {request.method} {request.url.path}: {exc}"
+    )
     response_body = ErrorResponse(
         detail="An internal server error occurred.",
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

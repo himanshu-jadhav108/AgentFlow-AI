@@ -1,6 +1,8 @@
 """Model manager service for checking and downloading HuggingFace models."""
 
 import os
+from typing import Optional
+
 from config.settings import settings
 from core.logger import logger
 
@@ -9,7 +11,7 @@ class ModelManager:
     """Manages downloading, verifying caching, and local loading of LLM weights."""
 
     @staticmethod
-    def download_model(model_name: str = None) -> None:
+    def download_model(model_name: Optional[str] = None) -> None:
         """Pre-downloads and caches model checkpoints from the HuggingFace Hub.
 
         Avoids repeated downloads using HuggingFace's internal caching.
@@ -22,7 +24,9 @@ class ModelManager:
 
         # Skip model weight download if provider is Ollama
         if settings.LLM_PROVIDER == "ollama":
-            logger.info("ModelManager: LLM provider is set to Ollama. Skipping Hub cache checks.")
+            logger.info(
+                "ModelManager: LLM provider is set to Ollama. Skipping Hub cache checks."
+            )
             return
 
         logger.info(f"ModelManager: Checking local cache for model '{model_name}'...")
@@ -39,8 +43,12 @@ class ModelManager:
             logger.info("ModelManager: Syncing local model weights caches...")
             AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
 
-            logger.info(f"ModelManager: Local cache for '{model_name}' is verified and ready.")
+            logger.info(
+                f"ModelManager: Local cache for '{model_name}' is verified and ready."
+            )
 
         except Exception as e:
-            logger.error(f"ModelManager: Failed to pre-download model '{model_name}': {e}")
+            logger.error(
+                f"ModelManager: Failed to pre-download model '{model_name}': {e}"
+            )
             raise e

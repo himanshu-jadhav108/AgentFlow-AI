@@ -1,6 +1,7 @@
 """Cache manager to orchestrate API data caching based on config options."""
 
 from typing import Any, Dict, Optional
+
 from cache.memory_cache import MemoryCache
 from config.settings import settings
 from core.logger import logger

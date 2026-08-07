@@ -3,6 +3,7 @@
 import json
 import re
 from typing import Any, Dict
+
 from core.logger import logger
 
 
@@ -24,7 +25,9 @@ def parse_json_response(raw_text: str) -> Dict[str, Any]:
     cleaned = raw_text.strip()
 
     # 1. Search for markdown code block wraps: ```json ... ```
-    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", cleaned, re.DOTALL | re.IGNORECASE)
+    match = re.search(
+        r"```(?:json)?\s*(\{.*?\})\s*```", cleaned, re.DOTALL | re.IGNORECASE
+    )
     if match:
         cleaned = match.group(1)
     else:

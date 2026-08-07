@@ -1,6 +1,7 @@
 """API dependency injection resources."""
 
 from typing import Any
+
 from app.graph.builder import build_graph
 from app.retrieval.retriever import SemanticRetriever
 from cache.cache_manager import CacheManager

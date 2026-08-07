@@ -2,6 +2,7 @@
 
 import re
 import unicodedata
+
 from core.logger import logger
 
 
@@ -50,5 +51,7 @@ class TextCleaner:
                 cleaned_parts.append(cleaned_part)
 
         final_text = "".join(cleaned_parts).strip()
-        logger.debug(f"Cleaned text: reduced length from {len(text)} to {len(final_text)} characters.")
+        logger.debug(
+            f"Cleaned text: reduced length from {len(text)} to {len(final_text)} characters."
+        )
         return final_text

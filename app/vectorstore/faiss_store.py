@@ -3,8 +3,10 @@
 import os
 import shutil
 from typing import List, Optional
+
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document as LCDocument
+
 from app.embeddings.embedding_model import LocalEmbeddingManager
 from app.schemas.document import Document
 from core.logger import logger
@@ -59,7 +61,9 @@ class FAISSStoreManager:
             return
 
         if self.db is None:
-            logger.info("No index currently loaded. Creating new index instead of appending.")
+            logger.info(
+                "No index currently loaded. Creating new index instead of appending."
+            )
             self.create_index(documents)
             return
 
@@ -82,7 +86,9 @@ class FAISSStoreManager:
         duplicate_ids = [doc_id for doc_id in ids if doc_id in existing_ids]
 
         if duplicate_ids:
-            logger.debug(f"Removing {len(duplicate_ids)} existing duplicate chunks before inserting.")
+            logger.debug(
+                f"Removing {len(duplicate_ids)} existing duplicate chunks before inserting."
+            )
             self.db.delete(duplicate_ids)
 
         self.db.add_documents(lc_docs, ids=ids)

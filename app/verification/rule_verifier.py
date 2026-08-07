@@ -2,6 +2,7 @@
 
 import time
 from typing import Any, Dict, List
+
 from core.logger import logger
 
 
@@ -58,7 +59,9 @@ class RuleVerifier:
 
         # 4. Length limits check
         elif len(answer) > 3000:
-            errors.append(f"Answer length ({len(answer)} characters) exceeds the 3000 limit.")
+            errors.append(
+                f"Answer length ({len(answer)} characters) exceeds the 3000 limit."
+            )
 
         # 5. Citations type check
         if not isinstance(citations, list):
@@ -83,14 +86,24 @@ class RuleVerifier:
         if not is_refusal:
             # Answer is stating facts, so at least one citation must exist
             if not citations:
-                errors.append("Answer contains claims but does not cite any document sources.")
+                errors.append(
+                    "Answer contains claims but does not cite any document sources."
+                )
             else:
                 # Ensure all cited documents belong to retrieved contexts
-                retrieved_sources = set(getattr(c, "source", "") for c in retrieved_chunks if getattr(c, "source", ""))
+                retrieved_sources = set(
+                    getattr(c, "source", "")
+                    for c in retrieved_chunks
+                    if getattr(c, "source", "")
+                )
                 for cite in citations:
                     # Check substring containment case-insensitively
-                    if not any(cite.lower() in src.lower() for src in retrieved_sources):
-                        errors.append(f"Cited source document '{cite}' was not retrieved in search context.")
+                    if not any(
+                        cite.lower() in src.lower() for src in retrieved_sources
+                    ):
+                        errors.append(
+                            f"Cited source document '{cite}' was not retrieved in search context."
+                        )
 
         # 8. Validate retry parameters
         if retry_count < 0:

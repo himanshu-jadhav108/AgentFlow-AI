@@ -3,6 +3,7 @@
 import hashlib
 import os
 from typing import List
+
 from app.schemas.document import Document
 from core.logger import logger
 
@@ -68,9 +69,13 @@ class MarkdownLoader:
                     content = f.read()
                 break
             except UnicodeDecodeError:
-                logger.warning(f"Failed to read {file_path} with encoding {encoding}. Trying next.")
+                logger.warning(
+                    f"Failed to read {file_path} with encoding {encoding}. Trying next."
+                )
         else:
-            logger.error(f"Failed to read {file_path} with any supported encoding ({encodings}). skipping.")
+            logger.error(
+                f"Failed to read {file_path} with any supported encoding ({encodings}). skipping."
+            )
             return None
 
         if not content.strip():
@@ -98,5 +103,7 @@ class MarkdownLoader:
             "type": "knowledge_base",
         }
 
-        logger.debug(f"Loaded markdown document: {filename} (ID: {doc_id}, Title: '{title}')")
+        logger.debug(
+            f"Loaded markdown document: {filename} (ID: {doc_id}, Title: '{title}')"
+        )
         return Document(id=doc_id, content=content, metadata=metadata)

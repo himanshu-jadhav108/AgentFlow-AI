@@ -1,14 +1,19 @@
 """REST API endpoints defining route handlers for AgentFlow AI."""
 
 import os
+import time
 from typing import Any, Dict
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
-from app.api.dependencies import get_agent_graph, get_cache_manager, get_retriever
+
+from app.api.dependencies import (get_agent_graph, get_cache_manager,
+                                  get_retriever)
 from app.api.validators import RequestValidator
 from app.schemas.answer import AskRequest, AskResponse
-import time
-from app.schemas.retrieval import SearchRequest, SearchResponse, IndexResponse, GraphRunRequest, GraphRunResponse
+from app.schemas.retrieval import (GraphRunRequest, GraphRunResponse,
+                                   IndexResponse, SearchRequest,
+                                   SearchResponse)
 from app.services.indexing_service import IndexingService
 from cache.cache_manager import CacheManager
 from config.settings import settings
@@ -83,7 +88,9 @@ async def rebuild_index(
         raise he
     except Exception as e:
         logger.exception(f"Index rebuild failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to build vector index: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to build vector index: {e}"
+        )
 
 
 @router.post(
@@ -118,7 +125,9 @@ async def search_index(
         )
     except Exception as e:
         logger.exception(f"Semantic search execution failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Database search execution failure: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Database search execution failure: {e}"
+        )
 
 
 @router.post(
@@ -174,7 +183,9 @@ async def ask_agent(
         requires_human = final_state.get("requires_human", False)
 
         meta = final_state.get("metadata", {})
-        reason = meta.get("verification_reason", meta.get("triage_reason", "Processed successfully."))
+        reason = meta.get(
+            "verification_reason", meta.get("triage_reason", "Processed successfully.")
+        )
 
         if not answer:
             answer = "I could not find supporting information."
@@ -200,7 +211,9 @@ async def ask_agent(
 
     except Exception as e:
         logger.exception(f"RAG workflow execution failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Graph workflow execution failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Graph workflow execution failed: {e}"
+        )
 
 
 @router.post(
@@ -313,10 +326,12 @@ async def get_graph() -> Dict[str, Any]:
 )
 async def get_system_status() -> Dict[str, Any]:
     """Retrieves dynamic diagnostics metrics from the local server machine."""
-    import sys
     import json
+    import sys
+
     import psutil
     import torch
+
     from app.llm.model_loader import ModelLoader
 
     process = psutil.Process(os.getpid())
@@ -336,7 +351,12 @@ async def get_system_status() -> Dict[str, Any]:
     doc_dir = settings.DOCUMENTS_DIR
     doc_count = 0
     if os.path.exists(doc_dir):
-        doc_count = sum(1 for root, _, files in os.walk(doc_dir) for f in files if f.endswith(".md") or f.endswith(".json"))
+        doc_count = sum(
+            1
+            for root, _, files in os.walk(doc_dir)
+            for f in files
+            if f.endswith(".md") or f.endswith(".json")
+        )
 
     meta_file = os.path.join(store_path, "index_metadata.json")
     meta_info = {}
@@ -363,4 +383,3 @@ async def get_system_status() -> Dict[str, Any]:
         "memory_rss_mb": round(memory_rss_mb, 2),
         "system_ready": system_ready,
     }
-

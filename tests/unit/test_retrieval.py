@@ -4,17 +4,19 @@ import os
 import shutil
 import tempfile
 from typing import Generator
+
 import pytest
 from fastapi.testclient import TestClient
-from app.schemas.document import Document
-from app.loaders.markdown_loader import MarkdownLoader
-from app.loaders.json_loader import JSONCaseLoader
-from app.preprocessing.cleaner import TextCleaner
-from app.preprocessing.chunker import DocumentChunker
+
 from app.embeddings.embedding_model import LocalEmbeddingManager
-from app.vectorstore.faiss_store import FAISSStoreManager
-from app.retrieval.retriever import SemanticRetriever
+from app.loaders.json_loader import JSONCaseLoader
+from app.loaders.markdown_loader import MarkdownLoader
+from app.preprocessing.chunker import DocumentChunker
+from app.preprocessing.cleaner import TextCleaner
 from app.retrieval.ranking import SearchResultRanker
+from app.retrieval.retriever import SemanticRetriever
+from app.schemas.document import Document
+from app.vectorstore.faiss_store import FAISSStoreManager
 
 
 @pytest.fixture
@@ -35,7 +37,9 @@ def test_text_cleaner() -> None:
     assert cleaned == "Hello World!\n\nNew Paragraph."
 
     # Code block protection
-    code_text = "Some text.\n\n```python\nif x  ==  y:\n    print(  'hello'  )\n```\nMore text."
+    code_text = (
+        "Some text.\n\n```python\nif x  ==  y:\n    print(  'hello'  )\n```\nMore text."
+    )
     cleaned_code = cleaner.clean(code_text)
     # The spaces inside the code block 'if x  ==  y:' and 'print(  "hello"  )' must be preserved!
     assert "if x  ==  y:" in cleaned_code
@@ -76,12 +80,13 @@ def test_json_loader(temp_dir) -> None:
             "question": "What is 2+2?",
             "answer": "It is equal to four.",
             "priority": 4,
-            "metadata": {"source_env": "test"}
+            "metadata": {"source_env": "test"},
         }
     ]
 
     with open(json_path, "w", encoding="utf-8") as f:
         import json
+
         json.dump(valid_data, f)
 
     loader = JSONCaseLoader(json_path)
@@ -99,7 +104,7 @@ def test_document_chunker() -> None:
     doc = Document(
         id="parent_doc",
         content="Line 1\n" * 150,  # Generates content long enough to trigger chunking
-        metadata={"title": "Line Document", "filename": "lines.md"}
+        metadata={"title": "Line Document", "filename": "lines.md"},
     )
 
     chunker = DocumentChunker(chunk_size=100, chunk_overlap=20)
@@ -131,8 +136,16 @@ def test_faiss_persistence_and_deduplication(temp_dir) -> None:
     manager = FAISSStoreManager()
 
     docs = [
-        Document(id="doc_a", content="The capital of France is Paris.", metadata={"priority": 1}),
-        Document(id="doc_b", content="The capital of Germany is Berlin.", metadata={"priority": 2})
+        Document(
+            id="doc_a",
+            content="The capital of France is Paris.",
+            metadata={"priority": 1},
+        ),
+        Document(
+            id="doc_b",
+            content="The capital of Germany is Berlin.",
+            metadata={"priority": 2},
+        ),
     ]
 
     # Create and Save
@@ -151,7 +164,11 @@ def test_faiss_persistence_and_deduplication(temp_dir) -> None:
 
     # Test Deduplication: Add "doc_a" again with updated text
     updated_docs = [
-        Document(id="doc_a", content="Paris is the beautiful capital of France.", metadata={"priority": 1})
+        Document(
+            id="doc_a",
+            content="Paris is the beautiful capital of France.",
+            metadata={"priority": 1},
+        )
     ]
     new_manager.add_documents(updated_docs)
 
@@ -172,10 +189,54 @@ def test_ranker() -> None:
     # Mock candidate tuple: (LCDocument, L2/CosineDistance)
     # Since COSINE strategy is set: CosineSimilarity = 1 - score
     candidates = [
-        (LCDocument(page_content="Text A", metadata={"chunk_id": "c1", "document_id": "d1", "priority": 1, "chunk_index": 0}), 0.1),  # CosineSimilarity = 0.9
-        (LCDocument(page_content="Text B", metadata={"chunk_id": "c2", "document_id": "d2", "priority": 5, "chunk_index": 0}), 0.1),  # CosineSimilarity = 0.9 (Higher Priority)
-        (LCDocument(page_content="Text C", metadata={"chunk_id": "c3", "document_id": "d1", "priority": 1, "chunk_index": 1}), 0.1),  # CosineSimilarity = 0.9 (Later Index)
-        (LCDocument(page_content="Text D", metadata={"chunk_id": "c4", "document_id": "d3", "priority": 3, "chunk_index": 0}), 0.3),  # CosineSimilarity = 0.7
+        (
+            LCDocument(
+                page_content="Text A",
+                metadata={
+                    "chunk_id": "c1",
+                    "document_id": "d1",
+                    "priority": 1,
+                    "chunk_index": 0,
+                },
+            ),
+            0.1,
+        ),  # CosineSimilarity = 0.9
+        (
+            LCDocument(
+                page_content="Text B",
+                metadata={
+                    "chunk_id": "c2",
+                    "document_id": "d2",
+                    "priority": 5,
+                    "chunk_index": 0,
+                },
+            ),
+            0.1,
+        ),  # CosineSimilarity = 0.9 (Higher Priority)
+        (
+            LCDocument(
+                page_content="Text C",
+                metadata={
+                    "chunk_id": "c3",
+                    "document_id": "d1",
+                    "priority": 1,
+                    "chunk_index": 1,
+                },
+            ),
+            0.1,
+        ),  # CosineSimilarity = 0.9 (Later Index)
+        (
+            LCDocument(
+                page_content="Text D",
+                metadata={
+                    "chunk_id": "c4",
+                    "document_id": "d3",
+                    "priority": 3,
+                    "chunk_index": 0,
+                },
+            ),
+            0.3,
+        ),  # CosineSimilarity = 0.7
     ]
 
     ranked = ranker.rank_results("query", candidates, min_similarity=0.5)
@@ -205,7 +266,7 @@ def test_api_endpoints(client) -> None:
     search_payload = {
         "query": "Can read-only users create API keys?",
         "top_k": 3,
-        "min_similarity": 0.3
+        "min_similarity": 0.3,
     }
     search_response = client.post("/search", json=search_payload)
     assert search_response.status_code == 200

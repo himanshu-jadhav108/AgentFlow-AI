@@ -1,6 +1,7 @@
 """Pydantic schemas for API responses and error messages."""
 
 from typing import Any, Dict, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -25,6 +26,12 @@ class ErrorResponse(BaseModel):
     """Standardized schema for API error responses."""
 
     detail: str = Field(..., description="Human-readable error details.")
-    status_code: int = Field(..., description="HTTP status code corresponding to the error.")
-    error_code: Optional[str] = Field(default=None, description="Optional internal error classification code.")
-    meta: Optional[Dict[str, Any]] = Field(default=None, description="Additional context or validation details.")
+    status_code: int = Field(
+        ..., description="HTTP status code corresponding to the error."
+    )
+    error_code: Optional[str] = Field(
+        default=None, description="Optional internal error classification code."
+    )
+    meta: Optional[Dict[str, Any]] = Field(
+        default=None, description="Additional context or validation details."
+    )

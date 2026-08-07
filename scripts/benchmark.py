@@ -10,8 +10,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import psutil
 import torch
 from fastapi.testclient import TestClient
-from main import app
+
 from core.logger import logger
+from main import app
 
 # Ensure target directories exist
 os.makedirs("docs", exist_ok=True)
@@ -53,7 +54,11 @@ def run_benchmark() -> None:
     best = min(latencies)
     worst = max(latencies)
     avg = sum(latencies) / len(latencies)
-    gpu_mem = torch.cuda.memory_allocated() / (1024 * 1024) if torch.cuda.is_available() else 0.0
+    gpu_mem = (
+        torch.cuda.memory_allocated() / (1024 * 1024)
+        if torch.cuda.is_available()
+        else 0.0
+    )
 
     # Write report Markdown
     report_content = f"""# Performance Benchmark Report

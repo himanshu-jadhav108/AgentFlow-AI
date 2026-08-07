@@ -2,9 +2,10 @@
 
 import time
 from typing import Any, Dict, List
+
+from app.generation.formatter import parse_json_response
 from app.llm.inference import InferenceManager
 from app.prompts.verification_prompt import VERIFICATION_PROMPT_TEMPLATE
-from app.generation.formatter import parse_json_response
 from core.logger import logger
 
 
@@ -39,7 +40,9 @@ class SemanticVerifier:
         refusal_phrase = "couldn't find supporting information"
         if refusal_phrase in answer.lower():
             latency_ms = (time.time() - start_time) * 1000
-            logger.info("SemanticVerifier: Answer is a correct refusal. Skipping LLM query.")
+            logger.info(
+                "SemanticVerifier: Answer is a correct refusal. Skipping LLM query."
+            )
             return {
                 "passed": True,
                 "reason": "Correctly refused answering due to lack of factual document support.",
@@ -52,9 +55,13 @@ class SemanticVerifier:
             source = getattr(chunk, "source", "Unknown Source")
             chunk_id = getattr(chunk, "chunk_id", "Unknown ID")
             text = getattr(chunk, "text", "")
-            context_parts.append(f"Source Document: {source} (Chunk: {chunk_id})\nText: {text}")
+            context_parts.append(
+                f"Source Document: {source} (Chunk: {chunk_id})\nText: {text}"
+            )
 
-        context_str = "\n\n".join(context_parts) if context_parts else "No context available."
+        context_str = (
+            "\n\n".join(context_parts) if context_parts else "No context available."
+        )
 
         # 3. Assemble prompt using Verification Prompt Template
         verification_prompt = VERIFICATION_PROMPT_TEMPLATE.format(
@@ -64,11 +71,15 @@ class SemanticVerifier:
 
         try:
             # 4. Invoke LLM with zero temperature for high determinism
-            raw_eval = self.inference_manager.generate_text(verification_prompt, max_new_tokens=256, temperature=0.0)
+            raw_eval = self.inference_manager.generate_text(
+                verification_prompt, max_new_tokens=256, temperature=0.0
+            )
             eval_data = parse_json_response(raw_eval)
 
             supported = bool(eval_data.get("supported", False))
-            reason = str(eval_data.get("reason", "Semantic verification completed.")).strip()
+            reason = str(
+                eval_data.get("reason", "Semantic verification completed.")
+            ).strip()
             latency_ms = (time.time() - start_time) * 1000
 
             logger.info(
@@ -93,4 +104,3 @@ class SemanticVerifier:
                 "reason": f"Semantic check bypassed due to LLM error: {e}",
                 "latency_ms": latency_ms,
             }
-        

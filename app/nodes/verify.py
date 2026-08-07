@@ -1,9 +1,10 @@
 """VERIFY node evaluating answer correctness using a hybrid pipeline."""
 
 import time
+
 from app.state.agent_state import AgentState
-from app.verification.hybrid_verifier import HybridVerifier
 from app.verification.confidence import calculate_confidence
+from app.verification.hybrid_verifier import HybridVerifier
 from app.verification.retry import get_retry_feedback
 from core.logger import logger
 
@@ -32,7 +33,9 @@ def verify_node(state: AgentState) -> dict:
     answer_payload = {
         "answer": answer,
         "citations": sources,
-        "reason": state.get("metadata", {}).get("triage_reason", "Processed successfully."),
+        "reason": state.get("metadata", {}).get(
+            "triage_reason", "Processed successfully."
+        ),
     }
 
     # Execute Hybrid Verification Pipeline
@@ -64,7 +67,9 @@ def verify_node(state: AgentState) -> dict:
         # Formulate self-correction feedback for the next model iteration
         feedback = get_retry_feedback(question, answer, reason)
         meta["retry_feedback"] = feedback
-        log_msg = f"Verify node: Verification failed (Cycle #{retry_count}). Reason: {reason}"
+        log_msg = (
+            f"Verify node: Verification failed (Cycle #{retry_count}). Reason: {reason}"
+        )
 
     # Compute deterministic weighted confidence score
     confidence = calculate_confidence(
@@ -78,13 +83,16 @@ def verify_node(state: AgentState) -> dict:
     # Check for fail-safe trigger (stop retrying and output a clean refusal)
     max_retries = state.get("max_retries", 3)
     if not passed and retry_count >= max_retries:
-        logger.error(f"Verify node: Maximum retry limit ({max_retries}) reached. Activating fail-safe.")
+        logger.error(
+            f"Verify node: Maximum retry limit ({max_retries}) reached. Activating fail-safe."
+        )
         log_msg += " | Max retries reached. Triggering fail-safe."
         answer = "I could not verify the answer using available documentation."
         verification_status = "verified"
 
     # Record metrics
     from monitoring.metrics import metrics
+
     metrics.record_verification(latency_ms)
     metrics.record_retries(1 if not passed else 0)
 

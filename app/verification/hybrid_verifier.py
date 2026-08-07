@@ -2,9 +2,10 @@
 
 import time
 from typing import Any, Dict, List
-from config.settings import settings
+
 from app.verification.rule_verifier import RuleVerifier
 from app.verification.semantic_verifier import SemanticVerifier
+from config.settings import settings
 from core.logger import logger
 
 
@@ -38,8 +39,13 @@ class HybridVerifier:
         start_time = time.time()
 
         # Load config toggles supporting both naming variants
-        rule_enabled = settings.ENABLE_RULE_VERIFICATION and settings.RULE_VALIDATION_ENABLED
-        semantic_enabled = settings.ENABLE_SEMANTIC_VERIFICATION and settings.SEMANTIC_VALIDATION_ENABLED
+        rule_enabled = (
+            settings.ENABLE_RULE_VERIFICATION and settings.RULE_VALIDATION_ENABLED
+        )
+        semantic_enabled = (
+            settings.ENABLE_SEMANTIC_VERIFICATION
+            and settings.SEMANTIC_VALIDATION_ENABLED
+        )
 
         logger.info(
             f"HybridVerifier: Starting. Config rules-enabled={rule_enabled}, "
@@ -87,12 +93,18 @@ class HybridVerifier:
             semantic_passed = semantic_res.get("passed", False)
 
             if not semantic_passed:
-                failures.append(semantic_res.get("reason", "Semantic verification failed."))
+                failures.append(
+                    semantic_res.get("reason", "Semantic verification failed.")
+                )
 
         passed = rule_passed and semantic_passed
         latency_ms = (time.time() - start_time) * 1000
 
-        reason_str = " | ".join(failures) if failures else "Grounding verification passed successfully."
+        reason_str = (
+            " | ".join(failures)
+            if failures
+            else "Grounding verification passed successfully."
+        )
 
         logger.info(
             f"HybridVerifier: Execution finished in {latency_ms:.2f}ms. Passed: {passed}. "

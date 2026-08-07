@@ -1,7 +1,9 @@
 """Performance and security middleware tests."""
 
 import time
+
 from fastapi import status
+
 from cache.cache_manager import CacheManager
 from config.settings import settings
 

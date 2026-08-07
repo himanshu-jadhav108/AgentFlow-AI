@@ -2,7 +2,9 @@
 
 import threading
 import time
+
 from langchain_community.embeddings import HuggingFaceEmbeddings
+
 from config.settings import settings
 from core.logger import logger
 
@@ -34,14 +36,18 @@ class LocalEmbeddingManager:
             with self._lock:
                 if self._embeddings is None:
                     model_name = settings.EMBEDDING_MODEL_NAME
-                    logger.info(f"Lazy loading local embedding model: '{model_name}'...")
+                    logger.info(
+                        f"Lazy loading local embedding model: '{model_name}'..."
+                    )
                     start_time = time.time()
 
                     # Load Hugging Face embeddings running locally on CPU
                     self._embeddings = HuggingFaceEmbeddings(
                         model_name=model_name,
                         model_kwargs={"device": "cpu"},
-                        encode_kwargs={"normalize_embeddings": True},  # Yields unit vectors for cosine similarity
+                        encode_kwargs={
+                            "normalize_embeddings": True
+                        },  # Yields unit vectors for cosine similarity
                     )
 
                     elapsed = time.time() - start_time

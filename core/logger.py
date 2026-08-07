@@ -6,7 +6,9 @@ server, and library logs in a single unified format.
 
 import logging
 import sys
+
 from loguru import logger
+
 from config.settings import settings
 
 
@@ -39,6 +41,7 @@ def setup_logging() -> None:
 
     # Call the Rich logging configuration setup
     from logging_config import setup_rich_logging
+
     setup_rich_logging()
 
     # Route Loguru records to the standard library root logger

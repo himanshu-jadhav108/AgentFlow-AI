@@ -1,10 +1,11 @@
 """Unit tests verifying the Hybrid Verification Pipeline and Confidence Engine."""
 
 import pytest
+
+from app.verification.confidence import calculate_confidence
+from app.verification.hybrid_verifier import HybridVerifier
 from app.verification.rule_verifier import RuleVerifier
 from app.verification.semantic_verifier import SemanticVerifier
-from app.verification.hybrid_verifier import HybridVerifier
-from app.verification.confidence import calculate_confidence
 from config.settings import settings
 
 
@@ -44,7 +45,9 @@ def test_rule_verifier_malformed_schema() -> None:
     assert any("missing" in err.lower() for err in res["errors"])
 
     # Null field
-    res_null = verifier.verify({"answer": "test", "citations": None, "reason": "test"}, [], 0)
+    res_null = verifier.verify(
+        {"answer": "test", "citations": None, "reason": "test"}, [], 0
+    )
     assert res_null["passed"] is False
     assert any("null" in err.lower() for err in res_null["errors"])
 

@@ -1,6 +1,7 @@
 """END node implementation for final wrap up operations."""
 
 import datetime
+
 from app.state.agent_state import AgentState
 from core.logger import logger
 
@@ -32,10 +33,12 @@ def end_node(state: AgentState) -> dict:
 
     # Copy and update timestamps
     timestamps = state.get("timestamps", {}).copy()
-    timestamps.update({
-        "end_time": now_str,
-        "latency_ms": str(latency_ms),
-    })
+    timestamps.update(
+        {
+            "end_time": now_str,
+            "latency_ms": str(latency_ms),
+        }
+    )
 
     return {
         "timestamps": timestamps,

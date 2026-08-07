@@ -79,10 +79,26 @@ class SystemMetrics:
             Dict[str, Any]: JSON-serializable observability dictionary.
         """
         with self._lock:
-            avg_resp = sum(self.response_times) / len(self.response_times) if self.response_times else 0.0
-            avg_ret = sum(self.retriever_times) / len(self.retriever_times) if self.retriever_times else 0.0
-            avg_gen = sum(self.generation_times) / len(self.generation_times) if self.generation_times else 0.0
-            avg_ver = sum(self.verification_times) / len(self.verification_times) if self.verification_times else 0.0
+            avg_resp = (
+                sum(self.response_times) / len(self.response_times)
+                if self.response_times
+                else 0.0
+            )
+            avg_ret = (
+                sum(self.retriever_times) / len(self.retriever_times)
+                if self.retriever_times
+                else 0.0
+            )
+            avg_gen = (
+                sum(self.generation_times) / len(self.generation_times)
+                if self.generation_times
+                else 0.0
+            )
+            avg_ver = (
+                sum(self.verification_times) / len(self.verification_times)
+                if self.verification_times
+                else 0.0
+            )
 
             return {
                 "total_requests": self.total_requests,

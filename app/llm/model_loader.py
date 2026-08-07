@@ -3,9 +3,11 @@
 import os
 import time
 from typing import Any
+
 import psutil
 import torch
 from transformers import AutoModelForCausalLM
+
 from config.settings import settings
 from core.logger import logger
 
@@ -43,7 +45,9 @@ class ModelLoader:
             self._device = "cpu"
             logger.info("No GPU detected. Selecting CPU device execution.")
 
-        logger.info(f"Loading local LLM model: '{model_name}' on device '{self._device}'...")
+        logger.info(
+            f"Loading local LLM model: '{model_name}' on device '{self._device}'..."
+        )
 
         # 2. Memory usage monitoring
         process = psutil.Process(os.getpid())
@@ -62,6 +66,7 @@ class ModelLoader:
 
             self._load_time = time.time() - start_time
             from monitoring.metrics import metrics
+
             metrics.record_model_load(self._load_time * 1000)
             final_mem_mb = process.memory_info().rss / (1024 * 1024)
             ram_delta = final_mem_mb - initial_mem_mb

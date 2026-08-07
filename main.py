@@ -1,21 +1,20 @@
 """Main entry point for the FastAPI application of AgentFlow AI."""
 
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from app.api.routes import router as api_router
+
 from app.api.exception_handlers import register_exception_handlers
-from app.api.middleware import (
-    RequestIDMiddleware,
-    RateLimitingMiddleware,
-    SecurityHeadersMiddleware,
-    TimingLoggingMiddleware,
-)
+from app.api.middleware import (RateLimitingMiddleware, RequestIDMiddleware,
+                                SecurityHeadersMiddleware,
+                                TimingLoggingMiddleware)
+from app.api.routes import router as api_router
 from app.graph.builder import build_graph
 from app.graph.visualization import generate_graph_visualizations
 from config.settings import settings
-from core.logger import setup_logging, logger
+from core.logger import logger, setup_logging
 
 # 1. Initialize log configuration
 setup_logging()
@@ -28,17 +27,23 @@ agent_graph = build_graph()
 async def lifespan(app: FastAPI):
     """Lifespan context manager that handles startup hooks."""
     logger.info("Initializing AgentFlow AI Production API Service...")
-    logger.info(f"Configuration: APP_NAME='{settings.APP_NAME}', ENV='{settings.APP_ENV}'")
-    logger.info(f"In-Memory Cache status: {settings.ENABLE_CACHE} (TTL: {settings.CACHE_TTL_SECONDS}s)")
-    logger.info(f"Rate Limiter status: Limit {settings.RATE_LIMIT_REQUESTS} reqs / {settings.RATE_LIMIT_WINDOW_SECONDS}s")
+    logger.info(
+        f"Configuration: APP_NAME='{settings.APP_NAME}', ENV='{settings.APP_ENV}'"
+    )
+    logger.info(
+        f"In-Memory Cache status: {settings.ENABLE_CACHE} (TTL: {settings.CACHE_TTL_SECONDS}s)"
+    )
+    logger.info(
+        f"Rate Limiter status: Limit {settings.RATE_LIMIT_REQUESTS} reqs / {settings.RATE_LIMIT_WINDOW_SECONDS}s"
+    )
 
     # Generate graph visualizations on server startup
     logger.info("Generating state visualizations (Mermaid, ASCII, PNG)...")
     generate_graph_visualizations(agent_graph)
 
     # Automatic startup validation: check model caches and FAISS databases
-    from app.services.model_manager import ModelManager
     from app.services.index_manager import IndexManager
+    from app.services.model_manager import ModelManager
 
     logger.info("Automatic Startup: Syncing local model caches...")
     ModelManager.download_model()
