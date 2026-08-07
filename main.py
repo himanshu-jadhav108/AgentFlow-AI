@@ -2,9 +2,13 @@
 
 from contextlib import asynccontextmanager
 from typing import Dict, Any
-from fastapi import FastAPI
+import time
+from fastapi import FastAPI, HTTPException
 from config.settings import settings
 from core.logger import setup_logging, logger
+from app.schemas.retrieval import SearchRequest, SearchResponse, IndexResponse
+from app.services.indexing_service import IndexingService
+from app.retrieval.retriever import SemanticRetriever
 
 # Initialize unified loguru logging
 setup_logging()
@@ -41,6 +45,45 @@ async def health_check() -> Dict[str, Any]:
         "llm_model_name": settings.LLM_MODEL_NAME,
         "embedding_model": settings.EMBEDDING_MODEL_NAME,
     }
+
+
+@app.post("/index", response_model=IndexResponse)
+async def rebuild_index() -> IndexResponse:
+    """Trigger a rebuild of the vector database from source markdown files and resolved support cases."""
+    logger.info("API request received: Rebuild vector index (/index)")
+    try:
+        service = IndexingService()
+        response = service.build_index()
+        if response.status == "error":
+            raise HTTPException(status_code=500, detail=response.message)
+        return response
+    except Exception as e:
+        logger.exception(f"Unexpected error rebuilding index: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/search", response_model=SearchResponse)
+async def search_index(request: SearchRequest) -> SearchResponse:
+    """Execute a semantic search query against the local FAISS vector store."""
+    logger.info(f"API request received: Search query '{request.query}'")
+    start_time = time.time()
+    try:
+        retriever = SemanticRetriever()
+        results = retriever.retrieve(
+            query=request.query,
+            top_k=request.top_k,
+            min_similarity=request.min_similarity,
+        )
+        latency_ms = (time.time() - start_time) * 1000
+        logger.info(f"API Search request completed in {latency_ms:.2f}ms. Returned {len(results)} chunks.")
+        return SearchResponse(
+            query=request.query,
+            results=results,
+            latency_ms=latency_ms,
+        )
+    except Exception as e:
+        logger.exception(f"Unexpected error executing search: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
