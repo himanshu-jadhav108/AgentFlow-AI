@@ -61,6 +61,8 @@ class ModelLoader:
             )
 
             self._load_time = time.time() - start_time
+            from monitoring.metrics import metrics
+            metrics.record_model_load(self._load_time * 1000)
             final_mem_mb = process.memory_info().rss / (1024 * 1024)
             ram_delta = final_mem_mb - initial_mem_mb
 

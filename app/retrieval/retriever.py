@@ -64,6 +64,8 @@ class SemanticRetriever:
             return []
 
         latency_ms = (time.time() - start_time) * 1000
+        from monitoring.metrics import metrics
+        metrics.record_retriever(latency_ms)
         logger.info(f"FAISS search completed in {latency_ms:.2f}ms. Found {len(results_with_scores)} candidates.")
 
         # Rank results and transform them into RetrievedChunk objects

@@ -42,6 +42,8 @@ def generate_node(state: AgentState) -> dict:
         )
 
         latency_ms = (time.time() - start_time) * 1000
+        from monitoring.metrics import metrics
+        metrics.record_generation(latency_ms)
         meta["generation_latency_ms"] = latency_ms
 
         # Remove the feedback block once consumed

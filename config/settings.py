@@ -62,6 +62,15 @@ class Settings(BaseSettings):
     MIN_CONFIDENCE: float = Field(default=0.5, description="Minimum confidence threshold required to pass validation.")
     MAX_RETRIES: int = Field(default=3, description="Maximum execution retries allowed for verification loop.")
 
+    # Caching Options
+    ENABLE_CACHE: bool = Field(default=True, description="Enable in-memory query answer caching.")
+    CACHE_TTL_SECONDS: int = Field(default=300, description="Time-to-Live in seconds for cached queries.")
+
+    # Rate Limiting & Security Options
+    RATE_LIMIT_REQUESTS: int = Field(default=100, description="Max requests permitted in the sliding window.")
+    RATE_LIMIT_WINDOW_SECONDS: int = Field(default=60, description="Sliding window duration in seconds.")
+    MAX_PAYLOAD_SIZE_BYTES: int = Field(default=1024 * 1024, description="Maximum payload size in bytes (default 1MB).")
+
 
 # Instantiate settings for global project import
 settings = Settings()

@@ -83,6 +83,11 @@ def verify_node(state: AgentState) -> dict:
         answer = "I could not verify the answer using available documentation."
         verification_status = "verified"
 
+    # Record metrics
+    from monitoring.metrics import metrics
+    metrics.record_verification(latency_ms)
+    metrics.record_retries(1 if not passed else 0)
+
     return {
         "answer": answer,
         "verification_status": verification_status,
