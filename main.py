@@ -4,11 +4,15 @@ from contextlib import asynccontextmanager
 from typing import Dict, Any
 import time
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import RedirectResponse
+from fastapi.exceptions import RequestValidationError
 from config.settings import settings
 from core.logger import setup_logging, logger
 from app.schemas.retrieval import SearchRequest, SearchResponse, IndexResponse
 from app.services.indexing_service import IndexingService
 from app.retrieval.retriever import SemanticRetriever
+from models.responses import HealthResponse, VersionResponse, ErrorResponse
+from core.exceptions import AppException, app_exception_handler, validation_exception_handler, generic_exception_handler
 
 # Initialize unified loguru logging
 setup_logging()
@@ -32,19 +36,38 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Register global exception handlers
+app.add_exception_handler(AppException, app_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, generic_exception_handler)
 
-@app.get("/health")
-async def health_check() -> Dict[str, Any]:
+
+@app.get("/", include_in_schema=False)
+async def root_redirect():
+    """Redirect root path to interactive Swagger API documentation."""
+    return RedirectResponse(url="/docs")
+
+
+@app.get("/health", response_model=HealthResponse)
+async def health_check() -> HealthResponse:
     """Check system health status and configuration details."""
     logger.debug("Health check endpoint queried")
-    return {
-        "status": "healthy",
-        "app_name": settings.APP_NAME,
-        "environment": settings.APP_ENV,
-        "llm_provider": settings.LLM_PROVIDER,
-        "llm_model_name": settings.LLM_MODEL_NAME,
-        "embedding_model": settings.EMBEDDING_MODEL_NAME,
-    }
+    return HealthResponse(
+        status="healthy",
+        app_name=settings.APP_NAME,
+        environment=settings.APP_ENV,
+    )
+
+
+@app.get("/version", response_model=VersionResponse)
+async def get_version() -> VersionResponse:
+    """Get the current application version metadata."""
+    return VersionResponse(
+        version="0.1.0",
+        app_name=settings.APP_NAME,
+        api_version="v1",
+        description="Local Customer Support Agent powered by LangGraph, FastAPI, and FAISS",
+    )
 
 
 @app.post("/index", response_model=IndexResponse)

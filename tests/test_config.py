@@ -20,6 +20,27 @@ def test_health_endpoint(client) -> None:
     assert data["status"] == "healthy"
     assert "app_name" in data
     assert data["environment"] == "testing"
-    assert data["llm_provider"] == "ollama"
-    assert data["llm_model_name"] == "test-model"
-    assert "embedding_model" in data
+
+
+def test_version_endpoint(client) -> None:
+    """Verify that the FastAPI version endpoint returns 200 and version details."""
+    response = client.get("/version")
+    assert response.status_code == status.HTTP_200_OK
+    
+    data = response.json()
+    assert "version" in data
+    assert "app_name" in data
+    assert data["api_version"] == "v1"
+    assert "description" in data
+
+
+def test_validation_error(client) -> None:
+    """Verify that the global validation error handler formats Pydantic errors into ErrorResponse."""
+    response = client.post("/search", json={})  # Empty JSON violates query requirement
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    
+    data = response.json()
+    assert "Validation failed" in data["detail"]
+    assert data["status_code"] == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert data["error_code"] == "VALIDATION_ERROR"
+    assert "errors" in data["meta"]

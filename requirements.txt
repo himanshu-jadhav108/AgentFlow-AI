@@ -19,6 +19,7 @@ torch>=2.2.0
 # Utilities
 python-dotenv>=1.0.1
 loguru>=0.7.2
+rich>=13.8.0
 
 # Testing
 pytest>=8.1.0

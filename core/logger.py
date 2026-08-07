@@ -33,49 +33,29 @@ class InterceptHandler(logging.Handler):
 
 
 def setup_logging() -> None:
-    """Configure Loguru to log to stdout and file, intercepting standard library logs."""
+    """Configure Loguru to redirect to standard logging, letting Rich handle the output."""
     # Remove default loguru handler
     logger.remove()
 
-    # Define color-coded format for terminal
-    terminal_format = (
-        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-        "<level>{level: <8}</level> | "
-        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-        "<level>{message}</level>"
-    )
+    # Call the Rich logging configuration setup
+    from logging_config import setup_rich_logging
+    setup_rich_logging()
 
-    # Standard format for text file logs (no color tags)
-    file_format = (
-        "{time:YYYY-MM-DD HH:mm:ss.SSS} | "
-        "{level: <8} | "
-        "{name}:{function}:{line} - "
-        "{message}"
-    )
+    # Route Loguru records to the standard library root logger
+    class PropagateHandler(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            try:
+                level = logging.getLevelName(record.levelname)
+            except Exception:
+                level = record.levelno
+            logging.getLogger(record.name).log(level, record.getMessage())
 
-    # Add console logging
-    logger.add(
-        sys.stdout,
-        format=terminal_format,
-        level=settings.LOG_LEVEL.upper(),
-        colorize=True,
-    )
+    # Add PropagateHandler to loguru
+    logger.add(PropagateHandler(), level="DEBUG")
 
-    # Add file logging
-    logger.add(
-        "logs/agentflow.log",
-        format=file_format,
-        level="DEBUG",
-        rotation="10 MB",
-        retention="30 days",
-        compression="zip",
-    )
-
-    # Intercept standard library logging configuration
-    logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
-
-    # Re-route uvicorn loggers to use our InterceptHandler
+    # Re-route standard loggers (like uvicorn and fastapi) to propagate up to root
+    # so they print through RichHandler and write to the log file.
     for logger_name in ("uvicorn", "uvicorn.access", "uvicorn.error", "fastapi"):
         logging_logger = logging.getLogger(logger_name)
-        logging_logger.handlers = [InterceptHandler()]
-        logging_logger.propagate = False
+        logging_logger.handlers = []
+        logging_logger.propagate = True

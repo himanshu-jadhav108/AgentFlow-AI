@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: agentflow-ai-web
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=AgentFlow AI Support Agent
+      - APP_ENV=production
+      - HOST=0.0.0.0
+      - PORT=8000
+      - LOG_LEVEL=INFO
+      - LLM_PROVIDER=ollama
+      - LLM_MODEL_NAME=phi3
+      - LLM_API_URL=http://host.docker.internal:11434
+      - EMBEDDING_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2
+      - VECTOR_DB_PATH=data/vectorstore
+      - DOCUMENTS_DIR=data/documents
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    extra_hosts:
+      # Allows the Docker container to connect to host's Ollama service
+      - "host.docker.internal:host-gateway"
+    restart: always
