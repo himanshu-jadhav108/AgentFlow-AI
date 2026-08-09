@@ -42,5 +42,55 @@ def parse_json_response(raw_text: str) -> Dict[str, Any]:
         logger.info("Successfully extracted and loaded JSON response.")
         return decoded
     except json.JSONDecodeError as e:
-        logger.error(f"JSON decode failed. Raw payload:\n{raw_text}\nError: {e}")
+        logger.warning(f"JSON decode failed ({e}). Attempting fallback structured text extraction...")
+
+        # Fallback parsing for non-JSON text outputs with structured sections
+        has_keywords = any(
+            kw in raw_text.lower()
+            for kw in ["answer", "citations", "reason", "source:", "passage:", "###", "####"]
+        )
+        if not has_keywords:
+            logger.error(f"JSON decode failed and no structured keywords found. Raw payload:\n{raw_text}\nError: {e}")
+            raise ValueError(f"Model output did not contain valid JSON syntax: {e}")
+
+        answer_match = re.search(
+            r"(?:Detailed Answer String|Answer):\s*\n?(.*?)(?=\n+####|\n+###|\n+Reason|\n+Citations|$)",
+            raw_text,
+            re.DOTALL | re.IGNORECASE,
+        )
+        reason_match = re.search(
+            r"(?:Reason Justification|Reason):\s*\n?(.*?)(?=\n+####|\n+###|\n+Citations|$)",
+            raw_text,
+            re.DOTALL | re.IGNORECASE,
+        )
+        citations_found = re.findall(
+            r"Source:\s*([^\n]+)|([a-zA-Z0-9_\-\/\\]+\.(?:md|json|txt|pdf))",
+            raw_text,
+            re.IGNORECASE,
+        )
+
+        extracted_answer = answer_match.group(1).strip() if answer_match else ""
+        if not extracted_answer:
+            # Strip preamble lines if any
+            clean_lines = [
+                line for line in raw_text.splitlines()
+                if not line.startswith("```") and not line.lower().startswith("here's") and not line.lower().startswith("here is")
+            ]
+            extracted_answer = "\n".join(clean_lines).strip()
+
+        extracted_reason = reason_match.group(1).strip() if reason_match else "Extracted from text output."
+        extracted_citations = []
+        for c_tuple in citations_found:
+            for c_str in c_tuple:
+                if c_str and c_str.strip() not in extracted_citations:
+                    extracted_citations.append(c_str.strip())
+
+        if extracted_answer:
+            logger.info("Fallback text extraction succeeded.")
+            return {
+                "answer": extracted_answer,
+                "citations": extracted_citations,
+                "reason": extracted_reason,
+            }
+
         raise ValueError(f"Model output did not contain valid JSON syntax: {e}")

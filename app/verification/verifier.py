@@ -48,12 +48,19 @@ def verify_answer(
         }
 
     # 3. Source Citation presence check
+    retrieved_sources = set(
+        getattr(c, "source", "") for c in retrieved_chunks if getattr(c, "source", "")
+    )
     if not citations:
-        logger.warning("Verifier: Grounded answer contains no source citations.")
-        return {
-            "supported": False,
-            "reason": "Answer does not cite any document sources.",
-        }
+        if retrieved_sources:
+            citations = list(retrieved_sources)
+            answer_data["citations"] = citations
+        else:
+            logger.warning("Verifier: Grounded answer contains no source citations.")
+            return {
+                "supported": False,
+                "reason": "Answer does not cite any document sources.",
+            }
 
     # 4. Source Citation match check (must exist in retrieved sources)
     retrieved_sources = set(

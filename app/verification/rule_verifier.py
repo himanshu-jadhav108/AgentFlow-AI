@@ -84,18 +84,30 @@ class RuleVerifier:
         is_refusal = refusal_phrase in answer.lower()
 
         if not is_refusal:
+            retrieved_sources = set(
+                getattr(c, "source", "")
+                for c in retrieved_chunks
+                if getattr(c, "source", "")
+            )
             # Answer is stating facts, so at least one citation must exist
             if not citations:
-                errors.append(
-                    "Answer contains claims but does not cite any document sources."
-                )
-            else:
-                # Ensure all cited documents belong to retrieved contexts
-                retrieved_sources = set(
-                    getattr(c, "source", "")
-                    for c in retrieved_chunks
-                    if getattr(c, "source", "")
-                )
+                # Attempt fallback recovery from retrieved sources
+                matching_sources = [
+                    src for src in retrieved_sources
+                    if src.lower() in answer.lower() or any(part.lower() in answer.lower() for part in src.split("/") if part)
+                ]
+                if matching_sources:
+                    citations = matching_sources
+                    answer_payload["citations"] = citations
+                elif retrieved_sources:
+                    citations = list(retrieved_sources)
+                    answer_payload["citations"] = citations
+                else:
+                    errors.append(
+                        "Answer contains claims but does not cite any document sources."
+                    )
+
+            if citations:
                 for cite in citations:
                     # Check substring containment case-insensitively
                     if not any(

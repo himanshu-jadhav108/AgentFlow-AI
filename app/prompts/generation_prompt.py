@@ -7,15 +7,17 @@ GENERATION_PROMPT_TEMPLATE = (
     "{history}\n\n"
     "Question: {question}\n\n"
     "Instructions:\n"
-    "Answer the user's question using ONLY the facts explicitly stated in the context documents above. "
+    "Answer the specific user question above using ONLY facts explicitly stated in the context documents. "
     "If the context documents do not contain enough information to answer, set the 'answer' field to "
-    '"I couldn\'t find supporting information.".\n\n'
-    "Your output MUST be a valid JSON object. Do not include markdown wraps like ```json or any "
-    "introductions or conclusions. Output ONLY the JSON block.\n\n"
+    '"I couldn\'t find supporting information." and "citations" to [].\n\n'
+    "CRITICAL FORMAT RULES:\n"
+    "1. Your output MUST be ONLY a single raw JSON object starting with '{{' and ending with '}}'.\n"
+    "2. DO NOT output any introductory text, preambles, or markdown headings.\n"
+    "3. You MUST include the exact Document Name(s) (e.g. 'faq.md') in the 'citations' JSON array for any answer provided.\n\n"
     "JSON Schema:\n"
     "{{\n"
-    '  "answer": "Detailed answer string with citations from documents",\n'
-    '  "citations": ["List of source document names used in the answer"],\n'
+    '  "answer": "Answer string addressing the user question based ONLY on the context",\n'
+    '  "citations": ["Exact Document Name from context documents, e.g. faq.md"],\n'
     '  "reason": "Reasoning justifying how the context supports the answer"\n'
     "}}\n"
 )

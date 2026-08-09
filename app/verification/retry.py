@@ -29,7 +29,7 @@ def get_retry_feedback(
         f'Please rewrite your answer to the user question: "{question}".\n'
         f"Follow these rules strictly:\n"
         f"1. Remove all ungrounded assumptions, figures, or claims not explicitly found in the context documents.\n"
-        f"2. Only list citations for documents actually present in the context. Do not invent document names.\n"
+        f"2. You MUST include the exact Document Name(s) from the context documents in the 'citations' JSON array for any claim made in your answer.\n"
         f"3. Make sure to return your answer strictly formatted in the requested JSON structure."
     )
     return feedback
