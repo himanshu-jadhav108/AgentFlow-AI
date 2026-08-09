@@ -48,6 +48,12 @@ async def lifespan(app: FastAPI):
     logger.info("Automatic Startup: Syncing local model caches...")
     ModelManager.download_model()
 
+    logger.info("Automatic Startup: Pre-loading LLM weights into RAM...")
+    from app.llm.model_loader import ModelLoader
+    from app.llm.tokenizer import TokenizerLoader
+    ModelLoader().load_model()
+    TokenizerLoader().load_tokenizer()
+
     logger.info("Automatic Startup: Verifying local FAISS index status...")
     IndexManager.ensure_index_ready()
 

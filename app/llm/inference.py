@@ -17,7 +17,7 @@ class InferenceManager:
         self.tokenizer_loader = TokenizerLoader()
 
     def generate_text(
-        self, prompt: str, max_new_tokens: int = 512, temperature: float = 0.1
+        self, prompt: str, max_new_tokens: int = 150, temperature: float = 0.1
     ) -> str:
         """Executes text generation on the local cached model.
 
