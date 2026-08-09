@@ -57,12 +57,18 @@ class ModelLoader:
             # Select precision (float16 for GPU, float32 for CPU)
             torch_dtype = torch.float16 if self._device == "cuda" else torch.float32
 
-            # Load weights
-            self._model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                torch_dtype=torch_dtype,
-                device_map=self._device,
-            )
+            # Load weights safely for CPU / CUDA
+            if self._device == "cuda":
+                self._model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    torch_dtype=torch_dtype,
+                    device_map="auto",
+                )
+            else:
+                self._model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    torch_dtype=torch_dtype,
+                ).to(self._device)
 
             self._load_time = time.time() - start_time
             from monitoring.metrics import metrics
